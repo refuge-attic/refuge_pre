@@ -34,11 +34,36 @@ and it will generate a refuge folder in rel/refuge. This release is
 fully relocatable, so you can put it where you want on your system.
 
 
-Note: Refuge will depend on the ICU library version that was present in
+
+### Notes about static build 
+
+Refuge will depend on the ICU library version that was present in
 your system at build time. To easily bundle this library with the
 package, build with:
     
     $ make rel USE_STATIC_ICU=1
+
+Check whether your package depends on Ncurses:
+
+    $ ldd ./rel/refuge/erts-*/bin/erlexec|grep ncurses
+    
+If it does, copy the .so file to ./rel/myapp/lib/ or rebuild Erlang
+without this dependency.
+
+Decide whether you need SSL support in your package and check whether it
+depends on OpenSSL:
+
+    $ ldd ./rel/myapp/lib/ssl-*/priv/bin/ssl_esock|grep 'libcrypto\|libssl'
+
+If it does, copy the .so file to ./rel/myapp/lib/ or rebuild Erlang
+without this dependency.
+
+If you copied any .so files in the last 2 steps, run this command, so
+that your app can find the libraries:
+
+    $ sed -i '/^RUNNER_USER=/a\\nexport LD_LIBRARY_PATH="$RUNNER_BASE_DIR/lib"' ./rel/myapp/bin/myapp
+
+### Development
 
 When developping on top of refuge, you could also run the command line:
 
@@ -46,6 +71,8 @@ When developping on top of refuge, you could also run the command line:
 
 Then ./dev/dev[1,2,3]/bin/refuge
 
+
+### Packageing
 
 To create package for your system run `make package` . For now we build
 packages for OSX, Debian, Redhat & Solaris.
