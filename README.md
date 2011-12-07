@@ -47,21 +47,21 @@ Check whether your package depends on Ncurses:
 
     $ ldd ./rel/refuge/erts-*/bin/erlexec|grep ncurses
     
-If it does, copy the .so file to ./rel/myapp/lib/ or rebuild Erlang
+If it does, copy the .so file to ./rel/refuge/lib/ or rebuild Erlang
 without this dependency.
 
 Decide whether you need SSL support in your package and check whether it
 depends on OpenSSL:
 
-    $ ldd ./rel/myapp/lib/ssl-*/priv/bin/ssl_esock|grep 'libcrypto\|libssl'
+    $ ldd ./rel/refuge/lib/ssl-*/priv/bin/ssl_esock|grep 'libcrypto\|libssl'
 
-If it does, copy the .so file to ./rel/myapp/lib/ or rebuild Erlang
+If it does, copy the .so file to ./rel/refuge/lib/ or rebuild Erlang
 without this dependency.
 
 If you copied any .so files in the last 2 steps, run this command, so
 that your app can find the libraries:
 
-    $ sed -i '/^RUNNER_USER=/a\\nexport LD_LIBRARY_PATH="$RUNNER_BASE_DIR/lib"' ./rel/myapp/bin/myapp
+    $ sed -i '/^RUNNER_USER=/a\\nexport LD_LIBRARY_PATH="$RUNNER_BASE_DIR/lib"' ./rel/refuge/bin/refuge
 
 ### Development
 
