@@ -33,6 +33,13 @@ Installation is pretty simple. Just run the command line:
 and it will generate a refuge folder in rel/refuge. This release is
 fully relocatable, so you can put it where you want on your system.
 
+
+Note: Refuge will depend on the ICU library version that was present in
+your system at build time. To easily bundle this library with the
+package, build with:
+    
+    $ make rel USE_STATIC_ICU=1
+
 When developping on top of refuge, you could also run the command line:
 
     $ make dev
