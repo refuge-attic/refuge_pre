@@ -1,11 +1,12 @@
 {application, refuge,
  [
-  {description, "dummy refuge application"},
-  {vsn, git},
+  {description, ""},
+  {vsn, "1"},
   {registered, []},
   {applications, [
                   kernel,
                   stdlib
                  ]},
+  {mod, { refuge_app, []}},
   {env, []}
  ]}.

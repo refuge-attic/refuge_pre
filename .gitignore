@@ -23,6 +23,9 @@ build-aux
 rel/refuge
 dev
 
+# refuge
+apps/refuge/ebin
+
 # couch
 apps/couch/couchjs
 
