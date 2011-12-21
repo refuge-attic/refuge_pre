@@ -24,5 +24,12 @@ start_link() ->
 %% ===================================================================
 
 init([]) ->
-    {ok, { {one_for_one, 5, 10}, []} }.
+    DNSDService = case refuge_dnssd:use_dnssd() of
+        true ->
+            [?CHILD(refuge_dnssd, worker)];
+        false ->
+            []
+    end,
+
+    {ok, { {one_for_one, 5, 10}, DNSDService} }.
 

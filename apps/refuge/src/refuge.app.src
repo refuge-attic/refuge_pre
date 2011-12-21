@@ -1,11 +1,16 @@
+%% -*- tab-width: 4;erlang-indent-level: 4;indent-tabs-mode: nil -*-
+%% ex: ft=erlang ts=4 sw=4 et
+
 {application, refuge,
  [
-  {description, ""},
+  {description, "Refuge - the dencentralized data platform"},
   {vsn, "1"},
   {registered, []},
   {applications, [
                   kernel,
-                  stdlib
+                  stdlib,
+                  couch,
+                  dnssd
                  ]},
   {mod, { refuge_app, []}},
   {env, []}
