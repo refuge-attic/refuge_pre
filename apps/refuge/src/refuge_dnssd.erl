@@ -61,8 +61,11 @@ register_service(Name) ->
         true ->
             Port = list_to_integer(get_port(Name)),
             ServiceName = service_name(),
-            {ok, Ref} = dnssd:register(ServiceName, "_http._tcp,_refuge",
-			       Port, [{path, "/"}]),
+            Type = case Name of
+                       httpd -> "_http._tcp,_refuge";
+                       https -> "_https._tcp,_refuge"
+                   end,
+            {ok, Ref} = dnssd:register(ServiceName, Type, Port, [{path, "/"}]),
             Ref;
         false ->
             nil
