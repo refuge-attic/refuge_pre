@@ -48,16 +48,8 @@ handle_cast(_Msg, State) ->
 handle_info(_Info, State) ->
     {noreply, State}.
 
-terminate(_Reason, State) ->
-    #state{reg_ref=RegRef, sreg_ref=SRegRef} = State,
-    lists:foreach(fun(Ref) ->
-                case Ref of
-                    nil ->
-                        ok;
-                    Ref ->
-                        ok = dnssd:stop(RegRef)
-                end
-        end, [RegRef, SRegRef]),
+terminate(_Reason, #state{reg_ref=RegRef, sreg_ref=SRegRef}) ->
+    _ = [ ok = dnssd:stop(Ref) || Ref <- [RegRef, SRegRef], is_reference(Ref) ],
     ok.
 
 
