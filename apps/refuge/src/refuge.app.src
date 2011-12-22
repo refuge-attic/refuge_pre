@@ -3,7 +3,7 @@
 
 {application, refuge,
  [
-  {description, "Refuge - the dencentralized data platform"},
+  {description, "Refuge - the decentralized data platform"},
   {vsn, "1"},
   {registered, []},
   {applications, [
