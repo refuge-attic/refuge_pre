@@ -23,7 +23,8 @@
 
 -record(state, {
         reg_ref = nil,
-        sreg_ref = nil}).
+        sreg_ref = nil,
+        node_id}).
 
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
@@ -35,9 +36,10 @@ use_dnssd() ->
     end.
 
 init(_) ->
-    RegRef = register_service(httpd),
-    SRegRef = register_service(https),
-    {ok, #state{reg_ref=RegRef, sreg_ref=SRegRef}}.
+    NodeId = refuge_util:node_id(),
+    RegRef = register_service(httpd, NodeId),
+    SRegRef = register_service(https, NodeId),
+    {ok, #state{reg_ref=RegRef, sreg_ref=SRegRef, node_id=NodeId}}.
 
 handle_call(_Request, _From, State) ->
     {noreply, State}.
@@ -56,7 +58,7 @@ terminate(_Reason, #state{reg_ref=RegRef, sreg_ref=SRegRef}) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
-register_service(Name) ->
+register_service(Name, NodeId) ->
     case refuge_util:is_daemon(Name) of
         true ->
             Port = list_to_integer(get_port(Name)),
@@ -65,7 +67,9 @@ register_service(Name) ->
                        httpd -> "_http._tcp,_refuge";
                        https -> "_https._tcp,_refuge"
                    end,
-            {ok, Ref} = dnssd:register(ServiceName, Type, Port, [{path, "/"}]),
+
+            Txt = [{path, "/"}, {node_id, NodeId}],
+            {ok, Ref} = dnssd:register(ServiceName, Type, Port, Txt),
             Ref;
         false ->
             nil
