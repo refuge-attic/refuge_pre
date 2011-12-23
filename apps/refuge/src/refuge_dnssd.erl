@@ -23,8 +23,7 @@
 
 -record(state, {
         reg_ref = nil,
-        sreg_ref = nil,
-        rreg_ref = nil}).
+        sreg_ref = nil}).
 
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
@@ -38,8 +37,7 @@ use_dnssd() ->
 init(_) ->
     RegRef = register_service(httpd),
     SRegRef = register_service(https),
-    RRegRef = register_service(refuge),
-    {ok, #state{reg_ref=RegRef, sreg_ref=SRegRef, rreg_ref=RRegRef}}.
+    {ok, #state{reg_ref=RegRef, sreg_ref=SRegRef}}.
 
 handle_call(_Request, _From, State) ->
     {noreply, State}.
@@ -50,35 +48,22 @@ handle_cast(_Msg, State) ->
 handle_info(_Info, State) ->
     {noreply, State}.
 
-terminate(_Reason, #state{reg_ref=RegRef, sreg_ref=SRegRef,
-        rreg_ref=RRegRef}) ->
-    _ = [ ok = dnssd:stop(Ref) || Ref <- [RegRef, SRegRef, RRegRef], is_reference(Ref) ],
+terminate(_Reason, #state{reg_ref=RegRef, sreg_ref=SRegRef}) ->
+    _ = [ ok = dnssd:stop(Ref) || Ref <- [RegRef, SRegRef], is_reference(Ref) ],
     ok.
 
 
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
-register_service(refuge) ->
-    %% register refuge service. By default we are trying to connect
-    %% between refuge nodes using https.
-    Port = case refuge_util:is_daemon(https) of
-        true ->
-            list_to_integer(get_port(https));
-        false ->
-            list_to_integer(get_port(httpd))
-    end,
-    ServiceName = service_name(),
-    {ok, Ref} = dnssd:register(ServiceName, "_refuge._tcp", Port, []),
-    Ref;
 register_service(Name) ->
     case refuge_util:is_daemon(Name) of
         true ->
             Port = list_to_integer(get_port(Name)),
             ServiceName = service_name(),
             Type = case Name of
-                       httpd -> "_http._tcp";
-                       https -> "_https._tcp"
+                       httpd -> "_http._tcp,_refuge";
+                       https -> "_https._tcp,_refuge"
                    end,
             {ok, Ref} = dnssd:register(ServiceName, Type, Port, [{path, "/"}]),
             Ref;
