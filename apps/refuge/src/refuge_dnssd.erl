@@ -1,17 +1,17 @@
 %% -*- tab-width: 4;erlang-indent-level: 4;indent-tabs-mode: nil -*-
 %% ex: ft=erlang ts=4 sw=4 et
 %%
-%% This file is part of farmer released under the Apache license 2.
+%% This file is part of refuge released under the Apache license 2.
 %% See the NOTICE for more information.
 %%
 %% @author Benoît Chesneau <benoitc@refuge.io>
-%% @doc module in charge of dnssd discovery and registration of refuge.
+%% @doc module in charge of dnssd registration of refuge.
 
 -module(refuge_dnssd).
 
 -behaviour(gen_server).
 
--export([start_link/0, use_dnssd/0]).
+-export([start_link/0, use_dnssd/0, discoverable/0, get_port/1]).
 
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3]).
@@ -35,10 +35,21 @@ use_dnssd() ->
         _ -> false
     end.
 
+discoverable() ->
+    case  couch_config:get("refuge", "register_dnssd", "true") of
+        "true" -> true;
+        _ -> false
+    end.
+
+get_port(httpd) ->
+    mochiweb_socket_server:get(couch_httpd, port);
+get_port(httpsd) ->
+    mochiweb_socket_server:get(https, port).
+
 init(_) ->
     NodeId = refuge_util:node_id(),
     RegRef = register_service(httpd, NodeId),
-    SRegRef = register_service(https, NodeId),
+    SRegRef = register_service(httpsd, NodeId),
     {ok, #state{reg_ref=RegRef, sreg_ref=SRegRef, node_id=NodeId}}.
 
 handle_call(_Request, _From, State) ->
@@ -54,18 +65,20 @@ terminate(_Reason, #state{reg_ref=RegRef, sreg_ref=SRegRef}) ->
     _ = [ ok = dnssd:stop(Ref) || Ref <- [RegRef, SRegRef], is_reference(Ref) ],
     ok.
 
-
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
+
+
+%% internal functions
 
 register_service(Name, NodeId) ->
     case refuge_util:is_daemon(Name) of
         true ->
-            Port = list_to_integer(get_port(Name)),
+            Port = get_port(Name),
             ServiceName = service_name(),
             Type = case Name of
                        httpd -> "_http._tcp,_refuge";
-                       https -> "_https._tcp,_refuge"
+                       httpsd -> "_https._tcp,_refuge"
                    end,
 
             Txt = [{path, "/"}, {node_id, NodeId}],
@@ -74,12 +87,6 @@ register_service(Name, NodeId) ->
         false ->
             nil
     end.
-
-get_port(httpd) ->
-    couch_config:get("httpd", "port", "5984");
-get_port(https) ->
-    couch_config:get("ssl", "port", "6986").
-
 
 service_name() ->
     case couch_config:get(<<"refuge">>, <<"name">>) of

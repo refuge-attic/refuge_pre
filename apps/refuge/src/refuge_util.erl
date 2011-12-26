@@ -9,7 +9,9 @@
 
 -module(refuge_util).
 
--export([is_daemon/1, new_id/0, node_id/0]).
+-export([is_daemon/1,
+         new_id/0, node_id/0,
+         get_unix_timestamp/1]).
 
 is_daemon(Name) when is_atom(Name) ->
     is_daemon(atom_to_list(Name));
@@ -41,4 +43,12 @@ node_id() ->
         NodeId ->
             list_to_binary(NodeId)
     end.
+
+
+%% @doc get_unix_timestamp
+%% @spec
+%% @output
+get_unix_timestamp(TS) ->
+    calendar:datetime_to_gregorian_seconds( calendar:now_to_universal_time(TS) ) -
+            calendar:datetime_to_gregorian_seconds( {{1970,1,1},{0,0,0}} ).
 

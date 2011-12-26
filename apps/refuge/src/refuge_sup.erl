@@ -26,7 +26,13 @@ start_link() ->
 init([]) ->
     DNSDService = case refuge_dnssd:use_dnssd() of
         true ->
-            [?CHILD(refuge_dnssd, worker)];
+            DNSSDDiscover = [?CHILD(refuge_dnssd_discover, worker)],
+            case refuge_dnssd:discoverable() of
+                true ->
+                    [?CHILD(refuge_dnssd, worker)|DNSSDDiscover];
+                false ->
+                    DNSSDDiscover
+            end;
         false ->
             []
     end,
