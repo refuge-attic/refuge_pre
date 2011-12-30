@@ -11,7 +11,8 @@
 
 -export([is_daemon/1,
          new_id/0, node_id/0,
-         get_unix_timestamp/1]).
+         get_unix_timestamp/1,
+         user/0]).
 
 is_daemon(Name) when is_atom(Name) ->
     is_daemon(atom_to_list(Name));
@@ -52,3 +53,16 @@ get_unix_timestamp(TS) ->
     calendar:datetime_to_gregorian_seconds( calendar:now_to_universal_time(TS) ) -
             calendar:datetime_to_gregorian_seconds( {{1970,1,1},{0,0,0}} ).
 
+
+user() ->
+    case os:getenv("USER") of
+        Username when is_list(Username) ->
+            {ok, Username};
+        _ ->
+            case os:getenv("USERNAME") of
+                Username when is_list(Username) ->
+                    {ok, Username};
+                _ ->
+                    {ok, "refuge_user"}
+            end
+    end.
