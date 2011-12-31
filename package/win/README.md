@@ -1,5 +1,5 @@
-Windows Build Tool
-==================
+Windows Build Support
+=====================
 
 Prepare your Machine
 --------------------
@@ -8,9 +8,9 @@ Prepare your Machine
 2. Download and install Microsoft Windows SDK 7.0 SDK accepting defaults
 3. Run Windows Update
 4. Download Refuge (or install msysgit and checkout sources)
-5. Turn off Windows notifications that will otherwise pop up and spoil the hands free automation. To do this
+5. Turn off Windows notifications (that will otherwise pop up and spoil the hands free automation). To do this
   
-  * Navigate to the Control and click on User Accounts. Slide the slider to Never Notify.
+  * Navigate to the Control and click on User Accounts. Move the slider to Never Notify.
   * Restart your computer.
 
 Running
@@ -22,7 +22,7 @@ To buld a package for Windows, open the Windows SDK console. At the prompt, type
 
 A menu will appear. If no manual selection is made within 10 seconds, the build will begin automatically and run until complete.
 
-For advanced use, the menu provides options to manually download, build or rebuild dependent libs or the project. These options are mainly for upgrading or testing libraries or for custom build scenarios.
+For advanced use, the menu provides options to manually download, build or rebuild dependent libs or the project. These options are mainly for upgrading or testing libraries or for custom build scenarios. CouchDB may also be packaged using the windows build support available in Refuge.
 
 Updates and Modifications
 -------------------------
@@ -42,7 +42,7 @@ As libraries are upgraded, adjustments to the build automation may be required:
 Documentation
 -------------
 
-Documentation for each lib is contained in the docs folder. This is reference and also details the manual process for what the autoomation is performing for you.
+Documentation for each dependent lib is contained in the docs folder. This is for reference and may also detail the manual process for what the automation  performs for you.
 
 Questions
 ---------
