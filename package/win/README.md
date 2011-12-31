@@ -8,7 +8,7 @@ Prepare your Machine
 2. Download and install Microsoft Windows SDK 7.0 SDK accepting defaults
 3. Run Windows Update
 4. Download Refuge (or install msysgit and checkout sources)
-5. Turn off Windows notifications (that will otherwise pop up and spoil the hands free automation). To do this
+5. Turn off Windows notifications (that will otherwise pop up and spoil the hands free automation). To do this:
   
   * Navigate to the Control and click on User Accounts. Move the slider to Never Notify.
   * Restart your computer.
@@ -29,13 +29,13 @@ Updates and Modifications
 
 ### Upgrading libs
 
-The windows build tool has been set up to make changes manageable as new versions of libraries are released. Small changes are required to the appropriate markdown files for file name and md5checksum in the cache folder to reflect when upgrading software to a newer version. These files are prefixed with an underscore ie. _tools.md, _tools_md5checksum.txt, _libs.md, _libs_md5checksum.txt.
+The windows build tool has been set up to make changes manageable as new versions of libraries are released. Small changes are required to the appropriate markdown files for file name and md5checksum in the cache folder to reflect when upgrading software to a newer version. These files are prefixed with an underscore ie. _tools.md, _tools_md5sum.txt, _libs.md, _libs_md5sum.txt.
 
 ### Scripts
 
 As libraries are upgraded, adjustments to the build automation may be required:
  
- * Tools setup is located in tools.cmd. Packages installed by Cygwin may be adjusted by adding to the minimal list. Do not remove any existing packages unless you understand the impact of doing so.
+ * Tools setup is located in tools.cmd. Packages installed for cygwin may be adjusted by adding to the minimal list. Do not remove any existing packages unless you understand the impact of doing so.
  
  * The script for each each major lib is self contained in its own .cmd file. This facilitates maintenance and testing. As much as possible, these files are consistent in structure.
 
