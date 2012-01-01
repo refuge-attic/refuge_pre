@@ -83,7 +83,7 @@ make_tbs(SubjectKey, Opts) ->
     SignAlgo = #'SignatureAlgorithm'{algorithm  = Algo,
 				     parameters = Parameters},
 
-    {#'OTPTBSCertificate'{serialNumber = trunc(random:uniform()*100000000)*10000 + 1,
+    {#'OTPTBSCertificate'{serialNumber = generate_serial(),
 			  signature    = SignAlgo,
 			  issuer       = Issuer,
 			  validity     = validity(Opts),
@@ -93,6 +93,14 @@ make_tbs(SubjectKey, Opts) ->
 			  extensions   = asn1_NOVALUE
 			 }, SubjectKey}.
 
+
+
+generate_serial() ->
+    Now = {_, _, Micro} = now(),
+    Nowish = calendar:now_to_universal_time(Now),
+    Nowsecs = calendar:datetime_to_gregorian_seconds(Nowish),
+    Then = calendar:datetime_to_gregorian_seconds({{1970, 1, 1}, {0, 0, 0}}),
+    (Nowsecs - Then) * 1000000 + Micro.
 
 validity(Opts) ->
     DefFrom0 = calendar:gregorian_days_to_date(calendar:date_to_gregorian_days(date())-1),

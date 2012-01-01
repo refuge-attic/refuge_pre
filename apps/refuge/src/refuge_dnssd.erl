@@ -41,6 +41,13 @@ discoverable() ->
         _ -> false
     end.
 
+http_discoverable() ->
+    case  couch_config:get("refuge", "http_dnssd", "true") of
+        "true" -> true;
+        _ -> false
+    end.
+
+
 get_port(httpd) ->
     mochiweb_socket_server:get(couch_httpd, port);
 get_port(httpsd) ->
@@ -48,7 +55,10 @@ get_port(httpsd) ->
 
 init(_) ->
     NodeId = refuge_util:node_id(),
-    RegRef = register_service(httpd, NodeId),
+    RegRef = case http_discoverable() of
+        true -> register_service(httpd, NodeId);
+        _ -> nil
+    end,
     SRegRef = register_service(httpsd, NodeId),
     {ok, #state{reg_ref=RegRef, sreg_ref=SRegRef, node_id=NodeId}}.
 
