@@ -23,7 +23,6 @@
 
 -record(state, {
         browse_ref,
-        browse_sref,
         active = []
     }).
 
@@ -34,9 +33,8 @@ start_link() ->
 
 init(_) ->
     process_flag(trap_exit, true),
-    {ok, Ref} = dnssd:browse("_http._tcp,_refuge"),
-    {ok, SRef} = dnssd:browse("_https._tcp,_refuge"),
-    {ok, #state{browse_ref=Ref, browse_sref=SRef}}.
+    {ok, Ref} = dnssd:browse("_refuge._tcp"),
+    {ok, #state{browse_ref=Ref}}.
 
 
 handle_call(_Request, _From, State) ->
@@ -55,17 +53,6 @@ handle_info({dnssd, Ref, {browse, remove, Result}}, #state{browse_ref = Ref}=Sta
     Pid = remove_node(Result),
     {noreply, State#state{active=[Pid | State#state.active]}};
 
-handle_info({dnssd, SRef, {browse, add, Result}}, #state{browse_sref = SRef}=State) ->
-    Pid = add_node(Result),
-    {noreply, State#state{active=[Pid | State#state.active]}};
-
-handle_info({dnssd, SRef, {browse, remove, Result}}, #state{browse_sref =
-        SRef}=State) ->
-    ?LOG_INFO("remove node ~p~n", [Result]),
-
-    {noreply, State};
-
-
 handle_info({'EXIT', From, normal}, #state{active=Pids}=State) ->
     {noreply, State#state{active = Pids -- [From]}};
 
@@ -75,10 +62,8 @@ handle_info({'EXIT', From, Reason}, State) ->
 handle_info(_Info, State) ->
     {noreply, State}.
 
-terminate(_Reason, #state{browse_ref=BrowseRef, browse_sref=BrowseSRef, active=Pids}) ->
-    [ok = dnssd:stop(Ref) || Ref <- [BrowseRef, BrowseSRef],
-        is_reference(Ref)],
-
+terminate(_Reason, #state{browse_ref=Ref, active=Pids}) ->
+    ok = dnssd:stop(Ref),
     %% close running jobs
     lists:foreach(fun(Pid) ->
                 catch unlink(Pid),

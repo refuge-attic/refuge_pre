@@ -58,8 +58,6 @@ setup() ->
                     "refuge_key.pem")),
             couch_config:set("daemons", "httpsd",
                 "{couch_httpd, start_link, [https]}");
-
-
         _ ->
             ok
     end.

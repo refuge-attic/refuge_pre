@@ -88,7 +88,7 @@ register_service(Name, NodeId) ->
             ServiceName = service_name(),
             Type = case Name of
                        httpd -> "_http._tcp,_refuge";
-                       httpsd -> "_https._tcp,_refuge"
+                       httpsd -> "_refuge._tcp"
                    end,
 
             Txt = [{path, "/"}, {node_id, NodeId}],
@@ -110,7 +110,7 @@ service_name() ->
     end.
 
 build_service_name() ->
-    Prefix = case username() of
+    Prefix = case refuge_util:user() of
         {ok, Username} ->
             case lists:reverse(Username) of
                 "s" ++ _ -> Username ++ "' refuge on ";
@@ -128,17 +128,3 @@ build_service_name() ->
             end;
         _ -> ""
     end.
-
-username() ->
-    case os:getenv("USER") of
-        Username when is_list(Username) ->
-            {ok, Username};
-        _ ->
-            case os:getenv("USERNAME") of
-                Username when is_list(Username) ->
-                    {ok, Username};
-                _ ->
-                    undefined
-            end
-    end.
-
