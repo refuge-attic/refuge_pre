@@ -12,7 +12,8 @@
 -export([is_daemon/1,
          new_id/0, node_id/0,
          get_unix_timestamp/1,
-         user/0]).
+         user/0,
+         find_executable/1]).
 
 is_daemon(Name) when is_atom(Name) ->
     is_daemon(atom_to_list(Name));
@@ -64,4 +65,12 @@ user() ->
                 _ ->
                     {ok, "refuge_user"}
             end
+    end.
+
+
+find_executable(Name) ->
+    case os:find_executable(Name) of
+        false -> false;
+        Path ->
+            "\"" ++ filename:nativename(Path) ++ "\""
     end.

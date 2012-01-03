@@ -12,10 +12,10 @@
 
 -export([make_cert/0, make_cert/2, make_cert/3,
          cert_to_binary/1, write_pem/3,
-         gen_dsa/2]).
+         gen_dsa/2,
+         pem_to_der/1, der_to_pem/2]).
 
 -include_lib("public_key/include/public_key.hrl").
-
 
 make_cert() ->
     make_cert(128, 20). %% Bytes i.e. {1024, 160}
