@@ -11,19 +11,19 @@ DISTDIR=       rel/archive
 all: deps compile
 
 compile:
-	@./rebar compile
+	@rebar compile
 
 deps:
-	@./rebar get-deps
+	@rebar get-deps
 
 clean: devclean
-	@./rebar clean
+	@rebar clean
 
 distclean: clean devclean relclean
-	@./rebar delete-deps
+	@rebar delete-deps
 
 rel: relclean deps
-	@./rebar compile generate
+	@rebar compile generate
 
 relclean:
 	@rm -rf rel/refuge
