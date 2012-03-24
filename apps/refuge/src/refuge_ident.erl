@@ -17,8 +17,6 @@ make_cert(Id) ->
     CsrFile = filename:join(Etc, "refuge.csr"),
     CertFile = filename:join(Etc, "refuge.crt"),
 
-    io:format("cnf file ~p~n", [CnfFile]),
-
     Commands = [
         ["genrsa", "-out", KeyFile, "2048"],
         ["req", "-new", "-key", KeyFile, "-out", CsrFile, "-config", CnfFile],
@@ -28,12 +26,23 @@ make_cert(Id) ->
     case apply_openssl_commands(Commands) of
         ok ->
             couch_config:set("identity", "key_file", KeyFile, true),
-            couch_config:set("identity", "cert_file", CertFile, true);
+            couch_config:set("identity", "cert_file", CertFile, true),
+            decode_key(KeyFile);
         Error ->
             Error
     end.
 
 %% private
+%%
+
+decode_key(PemFile) ->
+    {ok, PemBin} = file:read_file(PemFile),
+    [Entry] = public_key:pem_decode(PemBin),
+    {'RSAPrivateKey', 'two-prime', N , E, D, _P, _Q, _E1, _E2, _C,
+        _Other} = public_key:pem_entry_decode(Entry),
+    PrivKey = [crypto:mpint(E), crypto:mpint(N), crypto:mpint(D)],
+    PubKey = [crypto:mpint(E), crypto:mpint(N)],
+    {PrivKey, PubKey}.
 
 apply_openssl_commands([]) ->
     ok;
