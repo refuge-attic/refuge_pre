@@ -50,6 +50,10 @@ ERTS_PATH=$RUNNER_BASE_DIR/erts-$ERTS_VSN/bin
 # Setup command to control the node
 NODETOOL="$ERTS_PATH/escript $ERTS_PATH/nodetool $NAME_ARG $COOKIE_ARG"
 
+# Setup refuge console script
+RCONSOLE="$ERTS_PATH/escript $ERTS_PATH/rconsole $NAME_ARG $COOKIE_ARG \
+    -confdir $RUNNER_ETC_DIR"
+
 # Check the first argument for instructions
 case "$1" in
     start)
@@ -221,9 +225,16 @@ case "$1" in
         # Start the VM
         exec $CMD
         ;;
+    makecert)
+        if [ $# -ne 1 ]; then
+            echo "Usage: $SCRIPT makecert"
+            exit 1
+        fi
 
+        $RCONSOLE $@
+        ;;
     *)
-        echo "Usage: $SCRIPT {start|start_front|stop|restart|reboot|ping|console|console_clean|attach}"
+        echo "Usage: $SCRIPT {start|start_front|stop|restart|reboot|ping|console|console_clean|attach|makecert}"
         exit 1
         ;;
 esac

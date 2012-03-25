@@ -1,0 +1,51 @@
+%% -*- mode: erlang;erlang-indent-level: 4;indent-tabs-mode: nil -*-
+%% ex: ft=erlang ts=4 sw=4 et
+
+main(Args) ->
+    {RestArgs, _TargetNode, Path} = process_args(Args, [], undefined,
+                                                 undefined),
+
+    case RestArgs of
+        ["makecert"] ->
+            refuge_console:makecert(Path);
+        Other ->
+            io:format("Other: ~p\n", [Other]),
+            io:format("Usage: rconsole makecert\n")
+    end.
+
+
+process_args([], Acc, TargetNode, Path) ->
+    {lists:reverse(Acc), TargetNode, Path};
+process_args(["-setcookie", Cookie | Rest], Acc, TargetNode, Path) ->
+    erlang:set_cookie(node(), list_to_atom(Cookie)),
+    process_args(Rest, Acc, TargetNode, Path);
+process_args(["-name", TargetName | Rest], Acc, _, Path) ->
+    ThisNode = append_node_suffix(TargetName, "_maint_"),
+    {ok, _} = net_kernel:start([ThisNode, longnames]),
+    process_args(Rest, Acc, nodename(TargetName), Path);
+process_args(["-sname", TargetName | Rest], Acc, _, Path) ->
+    ThisNode = append_node_suffix(TargetName, "_maint_"),
+    {ok, _} = net_kernel:start([ThisNode, shortnames]),
+    process_args(Rest, Acc, nodename(TargetName), Path);
+process_args(["-confdir", Path | Rest], Acc, TargetNode, _) ->
+    process_args(Rest, Acc, TargetNode, Path);
+process_args([Arg | Rest], Acc, TargetNode, Path) ->
+    process_args(Rest, [Arg | Acc], TargetNode, Path).
+
+
+nodename(Name) ->
+    case string:tokens(Name, "@") of
+        [_Node, _Host] ->
+            list_to_atom(Name);
+        [Node] ->
+            [_, Host] = string:tokens(atom_to_list(node()), "@"),
+            list_to_atom(lists:concat([Node, "@", Host]))
+    end.
+
+append_node_suffix(Name, Suffix) ->
+    case string:tokens(Name, "@") of
+        [Node, Host] ->
+            list_to_atom(lists:concat([Node, Suffix, os:getpid(), "@", Host]));
+        [Node] ->
+            list_to_atom(lists:concat([Node, Suffix, os:getpid()]))
+    end.
