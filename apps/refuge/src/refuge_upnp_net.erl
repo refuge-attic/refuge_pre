@@ -109,27 +109,16 @@ subscribe(Service) ->
         {ok, _Status, Headers, _Body} ->
             lager:debug("uPnP subscription done: ~s", [SubUrl]),
             Sid = refuge_upnp_proto:parse_sub_resp(Headers),
-            {ok, Sid};
-        {error, Reason} ->
-            case Reason of
-                {content_length_undefined, {stat_code, StatCode}, Headers} ->
-                    %% Device's embeded httpd may not be well behaved,
-                    %% make best effort to guess whatever it returns.
-                    case StatCode of
-                        "200" ->
-                            lager:debug("uPnp subscription done: ~s", [SubUrl]),
-                            Sid = refuge_upnp_proto:guess_sub_resp(Headers),
-                            {ok, Sid};
-                        _ ->
-                            lager:warning("Malformed uPnP subscription response ~p", [Headers]),
-                            refuge_event:notify(
-                              {malformed_upnp_sub_resp, Headers}),
-                            {error, Reason}
-                    end;
+            case Sid of
+                undefined ->
+                    refuge_event:notify({malformed_upnp_sub_resp, Headers}),
+                    {error, <<"malformed upnp sub resp">>};
                 _ ->
-                    refuge_event:notify({upnp_sub_error, Reason}),
-                    {error, Reason}
-            end
+                    {ok, Sid}
+            end;
+        {error, Reason} ->
+            refuge_event:notify({upnp_sub_error, Reason}),
+            {error, Reason}
     end.
 
 
