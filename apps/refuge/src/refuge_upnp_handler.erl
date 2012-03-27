@@ -15,9 +15,15 @@
 %%===================================================================
 %% API
 %%===================================================================
--define(UPNP_PORT, 0).
+
+%% @doc Return the port used by the handler.
+%%
+-spec get_port() -> inet:port_number().
 get_port() ->
-    ?UPNP_PORT.
+    ListenerPid = ref_to_listener_pid(upnp_cowboy),
+    {ok, Port} = cowboy_listener:get_port(ListenerPid),
+    Port.
+
 
 init({tcp, http}, Req, _Opts) ->
     {ok, Req, undefined_state}.
@@ -45,3 +51,17 @@ handle(Req0, State) ->
 
 terminate(_Req, _State) ->
     ok.
+
+
+%% Internal.
+
+-spec ref_to_listener_pid(any()) -> pid().
+ref_to_listener_pid(Ref) ->
+	Children = supervisor:which_children(refuge_upnp_sup),
+	{_, ListenerSupPid, _, _} = lists:keyfind(
+		{cowboy_listener_sup, Ref}, 1, Children),
+	ListenerSupChildren = supervisor:which_children(ListenerSupPid),
+	{_, ListenerPid, _, _} = lists:keyfind(
+		cowboy_listener, 1, ListenerSupChildren),
+	ListenerPid.
+
