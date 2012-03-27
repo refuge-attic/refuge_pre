@@ -27,7 +27,7 @@ rel: relclean deps
 
 relclean:
 	@rm -rf rel/refuge
-	
+
 ##
 ## dev targets
 ##
@@ -42,7 +42,7 @@ dev1 dev2 dev3:
 	@mkdir -p dev
 	@(cd rel && rebar generate target_dir=../dev/$@ overlay_vars=vars/$@.config)
 
-devclean: 
+devclean:
 	@rm -rf dev
 
 ##

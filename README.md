@@ -35,20 +35,22 @@ Installation is pretty simple. Just run the command line:
 and it will generate a refuge folder in rel/refuge. This release is
 fully relocatable, so you can put it where you want on your system.
 
+Then create a certificate for your instance:
 
+    $ ./rel/refuge/bin/refuge makecert
 
-### Notes about static build 
+### Notes about static build
 
 Refuge will depend on the ICU library version that was present in
 your system at build time. To easily bundle this library with the
 package, build with:
-    
+
     $ make rel USE_STATIC_ICU=1
 
 Check whether your package depends on Ncurses:
 
     $ ldd ./rel/refuge/erts-*/bin/erlexec|grep ncurses
-    
+
 If it does, copy the .so file to ./rel/refuge/lib/ or rebuild Erlang
 without this dependency.
 
