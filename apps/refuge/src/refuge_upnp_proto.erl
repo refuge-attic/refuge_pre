@@ -268,14 +268,10 @@ parse_headers(Bin) ->
     Lines = binary:split(Bin, <<?CRLF>>, [global, trim]),
     [begin
      case binary:split(L, <<": ">>, [trim]) of
-            [Key, Value] -> {to_upper(Key), Value};
-            Key -> {to_upper(Key)}
+            [Key, Value] -> {Key, Value};
+            Key -> {Key}
         end
      end || L <- Lines].
-
-to_upper(L) ->
-	<< << (cowboy_bstr:char_to_upper(C)) >> || << C >> <= L >>.
-
 %%
 %% @doc Parses UPnP service's response to our subscription request,
 %%      returns subscription id if succeeded. Or undefined if failed.
