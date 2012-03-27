@@ -29,11 +29,13 @@ init([]) ->
     {ok, BrowseRef} = dnssd:browse("_refuge._tcp"),
     NewState = case can_register() of
         true ->
+            io:format("register dnssd~n", []),
             {ok, RegRef} = dnssd:register(service_name(), "_refuge._tcp",
                                        couch_util:get_port(https)),
             #state{local_only = true, reg_ref = RegRef,
                    browse_ref = BrowseRef};
         false ->
+            io:format("can't register dnssd~n", []),
             #state{local_only = true, browse_ref = BrowseRef}
     end,
     {ok, NewState}.
@@ -122,6 +124,7 @@ can_register() ->
     case {Advertise, is_local()} of
         {"true", false} ->
             true;
-        _ ->
+        Else ->
+            io:format("got else ~p~n", [Else]),
             false
     end.

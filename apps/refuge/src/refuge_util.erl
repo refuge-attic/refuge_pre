@@ -11,6 +11,7 @@
 -export([get_value/2, get_value/3]).
 -export([to_list/1, to_binary/1, to_integer/1, to_atom/1]).
 -export([ssl_ip/0]).
+-export([get_unix_timestamp/1]).
 -export([ipv6_supported/0, get_addrs/1, address_to_binary/2]).
 
 sh(Command) ->
@@ -200,6 +201,13 @@ to_atom(V) when is_binary(V) ->
     list_to_atom(binary_to_list(V));
 to_atom(V) ->
     list_to_atom(lists:flatten(io_lib:format("~p", [V]))).
+
+%% @doc get_unix_timestamp
+%% @spec
+%% @output
+get_unix_timestamp(TS) ->
+    calendar:datetime_to_gregorian_seconds( calendar:now_to_universal_time(TS) ) -
+            calendar:datetime_to_gregorian_seconds( {{1970,1,1},{0,0,0}} ).
 
 %% @doc is ipv6 supported on this machine ?
 ipv6_supported() ->
