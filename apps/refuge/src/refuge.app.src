@@ -5,7 +5,15 @@
   {registered, []},
   {applications, [
                   kernel,
-                  stdlib
+                  stdlib,
+                  lager,
+                  crypto,
+                  public_key,
+                  sasl,
+                  ssl,
+                  couch,
+                  cowboy,
+                  ibrowse
                  ]},
   {mod, { refuge_app, []}},
   {env, []}

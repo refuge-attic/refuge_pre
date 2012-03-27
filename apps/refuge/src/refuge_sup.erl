@@ -3,16 +3,16 @@
 
 -behaviour(supervisor).
 
+-include("supervisor.hrl").
+
 %% API
 -export([start_link/0]).
 
 %% Supervisor callbacks
 -export([init/1]).
 
-%% Helper macro for declaring children of supervisor
--define(CHILD(I, Type), {I, {I, start_link, []}, permanent, 5000, Type, [I]}).
 
-%% ===================================================================
+% ===================================================================
 %% API functions
 %% ===================================================================
 
@@ -24,5 +24,20 @@ start_link() ->
 %% ===================================================================
 
 init([]) ->
-    {ok, { {one_for_one, 5, 10}, []} }.
+    Tables       = ?CHILD(refuge_table),
+    EventManager = ?CHILD(refuge_event),
+
+    %% UPnP subsystemm is optional.
+    UPNPSup = case couch_config:get("refuge", "use_pnp", "false") of
+        "true" ->
+            [{upnp_sup,
+              {refuge_upnp_sup, start_link, []},
+              permanent, infinity, supervisor, [refuge_upnp_sup]}];
+        _ ->
+            []
+    end,
+
+
+
+    {ok, { {one_for_one, 5, 10}, [Tables, EventManager] ++ UPNPSup} }.
 
