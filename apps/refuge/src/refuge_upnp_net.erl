@@ -103,7 +103,7 @@ description(Cat, Prop) ->
 -spec subscribe(refuge_types:upnp_service()) -> {ok, string()} | {error, _Reason}.
 subscribe(Service) ->
     {PubUrl, SubUrl} = build_sub_url(Service),
-    case refuge_httpc:request(subscribe, SubUrl, [], [],
+    case refuge_httpc:request(subscribe, SubUrl, ["200"], [],
                               [{"TIMEOUT", "infinite"}, {"NT", "upnp:event"},
                                {"CALLBACK", PubUrl}]) of
         {ok, _Status, Headers, _Body} ->
