@@ -13,7 +13,8 @@
                   ssl,
                   couch,
                   cowboy,
-                  ibrowse
+                  ibrowse,
+                  dnssd
                  ]},
   {mod, { refuge_app, []}},
   {env, []}

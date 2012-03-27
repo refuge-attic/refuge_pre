@@ -37,7 +37,12 @@ init([]) ->
             []
     end,
 
+    DNSSD = case couch_config:get("refuge", "use_dnssd", "true") of
+        "true" ->
+            [?CHILD(refuge_dnssd)];
+        _ ->
+            []
+    end,
 
-
-    {ok, { {one_for_one, 5, 10}, [Tables, EventManager] ++ UPNPSup} }.
-
+    {ok, { {one_for_one, 5, 10}, [Tables, EventManager] ++ UPNPSup
+          ++ DNSSD} }.

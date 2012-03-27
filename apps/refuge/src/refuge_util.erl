@@ -11,6 +11,7 @@
 -export([get_value/2, get_value/3]).
 -export([to_list/1, to_binary/1, to_integer/1, to_atom/1]).
 -export([ssl_ip/0]).
+-export([ipv6_supported/0, get_addrs/1, address_to_binary/2]).
 
 sh(Command) ->
     sh(Command, []).
@@ -199,6 +200,49 @@ to_atom(V) when is_binary(V) ->
     list_to_atom(binary_to_list(V));
 to_atom(V) ->
     list_to_atom(lists:flatten(io_lib:format("~p", [V]))).
+
+%% @doc is ipv6 supported on this machine ?
+ipv6_supported() ->
+    case (catch inet:getaddr("localhost", inet6)) of
+        {ok, _Addr} ->
+            true;
+        {error, _} ->
+            false
+    end.
+
+%% @doc get ip addresses of an host
+get_addrs(Host) when is_binary(Host) ->
+    get_addrs(binary_to_list(Host));
+get_addrs(Host) ->
+    BindAddress = couch_config:get("httpd", "bind_address", any),
+    {ok, Ip} = inet_parse:address(BindAddress),
+    Protos = case Ip of
+        any ->
+            case ipv6_supported() of
+                true -> [inet, inet6];
+                _ -> [inet]
+            end;
+        {_, _, _, _} -> % IPv4
+            [inet];
+        {_, _, _, _, _, _, _, _} -> % IPv6
+            [inet6]
+    end,
+
+    lists:foldl(fun(Proto, Acc) ->
+        case (catch inet:getaddr(Host, Proto)) of
+            {ok, Addr} ->
+                [Addr|Acc];
+            {error, _} ->
+                Acc
+        end
+    end, [], Protos).
+
+%% @doc convert an address to its binary representation
+address_to_binary({_, _, _, _}=Ip, Port) ->
+    iolist_to_binary([inet_parse:ntoa(Ip), ":", integer_to_list(Port)]);
+address_to_binary({_,_,_,_,_,_,_,_}=Ip, Port) ->
+    iolist_to_binary(["[", inet_parse:ntoa(Ip), "]:",
+            integer_to_list(Port)]).
 
 
 %%% private
