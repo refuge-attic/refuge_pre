@@ -251,9 +251,10 @@ handle_info({udp, _Socket, _IP, _Port, Packet}, State) ->
         {ok, service, S} ->
             refuge_upnp_entity:create(service, S);
         {ok, uuid} ->
+            ok;
+        {error, _Reason} ->
+            %% malformed UPNP headers
             ok
-        %% {error, _Reason} ->
-        %%     refuge_event:notify({malformed_upnp_msearch_resp, Packet})
     end,
     {noreply, State};
 handle_info(Info, State) ->

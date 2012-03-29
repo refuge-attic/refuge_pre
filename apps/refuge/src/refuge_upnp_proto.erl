@@ -46,35 +46,49 @@
 parse_msearch_resp(Resp) ->
     Headers = mochiweb_headers:from_binary(Resp),
     Age = parse_max_age(Headers),
-    Loc = list_to_binary(get_header("LOCATION", Headers, "")),
-    Svr = list_to_binary(get_header("SERVER", Headers, "")),
-    ST  = get_header("ST", Headers, ""),
-    {Cat, Type, Ver} = case re:split(ST, ":", [{return, binary}]) of
-        [_, _, C, T, V] ->
-            {C, T, V};
-        [<<"upnp">>, ?UPNP_RD_NAME] ->
-            {<<"device">>, ?UPNP_RD_NAME, <<>>};
-        [<<"uuid">>| _] ->
-            {<<"uuid">>, <<>>, <<>>}
-    end,
-    USN = get_header("USN", Headers, ""),
-    [_, UUID|_] = re:split(USN, ":", [{return, binary}]),
-    case Cat of
-        <<"device">> ->
-            {ok, device, [{type,    Type},
-                          {ver,     Ver},
-                          {uuid,    UUID},
-                          {loc,     Loc},
-                          {max_age, Age},
-                          {server,  Svr}]};
-        <<"service">> ->
-            {ok, service, [{type,   Type},
-                           {ver,    Ver},
-                           {uuid,   UUID},
-                           {loc,    Loc}]};
-        <<"uuid">> ->
-            {ok, uuid}
-    end.
+    case mochiweb_headers:get_value("LOCATION", Headers) of
+        undefined ->
+            {error, no_loc_header};
+        Loc0 ->
+            Loc = binary_to_list(Loc0),
+            Svr = list_to_binary(get_header("SERVER", Headers, "")),
+            case  mochiweb_headers:get_value("ST", Headers) of
+            undefined ->
+                {error, no_st_header};
+            ST ->
+                {Cat, Type, Ver} = case re:split(ST, ":", [{return,
+                                                            binary}]) of
+                    [_, _, C, T, V] ->
+                        {C, T, V};
+                    [<<"upnp">>, ?UPNP_RD_NAME] ->
+                        {<<"device">>, ?UPNP_RD_NAME, <<>>};
+                    [<<"uuid">>| _] ->
+                        {<<"uuid">>, <<>>, <<>>}
+                end,
+                case  mochiweb_headers:get_value("USN", Headers) of
+                undefined ->
+                    {error, no_usn_header};
+                USN ->
+                    [_, UUID|_] = re:split(USN, ":", [{return, binary}]),
+                    case Cat of
+                        <<"device">> ->
+                            {ok, device, [{type,    Type},
+                                          {ver,     Ver},
+                                          {uuid,    UUID},
+                                          {loc,     Loc},
+                                          {max_age, Age},
+                                          {server,  Svr}]};
+                        <<"service">> ->
+                            {ok, service, [{type,   Type},
+                                           {ver,    Ver},
+                                           {uuid,   UUID},
+                                           {loc,    Loc}]};
+                        <<"uuid">> ->
+                            {ok, uuid}
+                    end
+                end
+            end
+        end.
 
 get_header(K, H, D) ->
     case mochiweb_headers:get_value(K, H) of
