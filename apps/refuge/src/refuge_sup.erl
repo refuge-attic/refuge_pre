@@ -28,7 +28,7 @@ init([]) ->
     EventManager = ?CHILD(refuge_event),
 
     %% UPnP subsystemm is optional.
-    UPNPSup = case couch_config:get("refuge", "use_pnp", "false") of
+    UPNPSup = case couch_config:get("refuge", "use_upnp", "false") of
         "true" ->
             [{upnp_sup,
               {refuge_upnp_sup, start_link, []},
