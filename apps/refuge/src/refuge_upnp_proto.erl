@@ -44,11 +44,11 @@
                                     | {ok, uuid}
                                     | {error, _Reason}.
 parse_msearch_resp(Resp) ->
-    Headers = mochiweb_header:from_binary(Resp),
+    Headers = mochiweb_headers:from_binary(Resp),
     Age = parse_max_age(Headers),
-    Loc = list_to_binary(mochiweb_header:get_value("LOCATION", Headers)),
-    Svr = list_to_binary(mochiweb_header:get_value("SERVER", Headers)),
-    ST  = mochiweb_header:get_value("ST", Headers),
+    Loc = list_to_binary(mochiweb_headers:get_value("LOCATION", Headers)),
+    Svr = list_to_binary(mochiweb_headers:get_value("SERVER", Headers)),
+    ST  = mochiweb_headers:get_value("ST", Headers),
     {Cat, Type, Ver} = case re:split(ST, ":", [{return, binary}]) of
         [_, _, C, T, V] ->
             {C, T, V};
@@ -57,7 +57,7 @@ parse_msearch_resp(Resp) ->
         [<<"uuid">>| _] ->
             {<<"uuid">>, <<>>, <<>>}
     end,
-    USN = mochiweb_header:get_value("USN", Headers),
+    USN = mochiweb_headers:get_value("USN", Headers),
     [_, UUID|_] = re:split(USN, ":", [{return, binary}]),
     case Cat of
         <<"device">> ->
@@ -77,7 +77,7 @@ parse_msearch_resp(Resp) ->
     end.
 
 parse_max_age(Headers) ->
-    case mochiweb_header:get_value("CACHE-CONTROL", Headers) of
+    case mochiweb_headers:get_value("CACHE-CONTROL", Headers) of
         undefined ->
             0;
         Cache ->
