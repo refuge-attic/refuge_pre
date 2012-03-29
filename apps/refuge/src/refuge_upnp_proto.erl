@@ -43,55 +43,47 @@
                                     | {ok, uuid}
                                     | {error, _Reason}.
 parse_msearch_resp(Resp) ->
-    %% Only interested in headers, strips off first line of the response.
-    {ok, _, H} = erlang:decode_packet(http, list_to_binary(Resp), []),
-    case parse_headers(H) of
-        Headers when is_list(Headers) ->
-            Age = parse_max_age(Headers),
-            Loc = get_header(<<"LOCATION">>, Headers),
-            Svr = get_header(<<"SERVER">>, Headers),
-            ST  = get_header(<<"ST">>, Headers),
-            {Cat, Type, Ver} = case re:split(binary_to_list(ST), ":",
-                                             [{return, binary}]) of
-               [_, _, C, T, V] ->
-                    {C, T, V};
-               [<<"upnp">>, ?UPNP_RD_NAME] ->
-                    {<<"device">>, ?UPNP_RD_NAME, <<>>};
-               [<<"uuid">>| _] ->
-                    {<<"uuid">>, <<>>, <<>>}
-            end,
-            USN = get_header(<<"USN">>, Headers),
-            [_, UUID|_] = re:split(binary_to_list(USN), ":", [{return, binary}]),
-            case Cat of
-                <<"device">> ->
-                    {ok, device, [{type,    Type},
-                                  {ver,     Ver},
-                                  {uuid,    UUID},
-                                  {loc,     Loc},
-                                  {max_age, Age},
-                                  {server,  Svr}]};
-                <<"service">> ->
-                    {ok, service, [{type,   Type},
-                                   {ver,    Ver},
-                                   {uuid,   UUID},
-                                   {loc,    Loc}]};
-                <<"uuid">> ->
-                    {ok, uuid}
-            end
+    Headers = mochiweb_header:from_binary(Resp),
+    Age = parse_max_age(Headers),
+    Loc = mochiweb_header:get_value(<<"LOCATION">>, Headers),
+    Svr = mochiweb_header:get_value(<<"SERVER">>, Headers),
+    ST  = mochiweb_header:get_value(<<"ST">>, Headers),
+    {Cat, Type, Ver} = case re:split(binary_to_list(ST), ":",
+                                     [{return, binary}]) of
+       [_, _, C, T, V] ->
+            {C, T, V};
+       [<<"upnp">>, ?UPNP_RD_NAME] ->
+            {<<"device">>, ?UPNP_RD_NAME, <<>>};
+       [<<"uuid">>| _] ->
+            {<<"uuid">>, <<>>, <<>>}
+    end,
+    USN = mochiweb_header:get_value(<<"USN">>, Headers),
+    [_, UUID|_] = re:split(binary_to_list(USN), ":", [{return, binary}]),
+    case Cat of
+        <<"device">> ->
+            {ok, device, [{type,    Type},
+                          {ver,     Ver},
+                          {uuid,    UUID},
+                          {loc,     Loc},
+                          {max_age, Age},
+                          {server,  Svr}]};
+        <<"service">> ->
+            {ok, service, [{type,   Type},
+                           {ver,    Ver},
+                           {uuid,   UUID},
+                           {loc,    Loc}]};
+        <<"uuid">> ->
+            {ok, uuid}
     end.
 
 parse_max_age(Headers) ->
-    case get_header(<<"CACHE-CONTROL">>, Headers) of
+    case mochiweb_header:get_value(<<"CACHE-CONTROL">>, Headers) of
         <<"max-age = ", A/binary>> ->
             list_to_integer(binary_to_list(A));
-       <<"max-age=", A/binary>> ->
-            list_to_integer(binary_to_list(A))
+        undefined ->
+            0
     end.
 
-get_header(Ty, H) ->
-    case lists:keyfind(Ty, 1, H) of
-        {_, V} -> V
-    end.
 
 %% @doc Parses given description of a UPnP device.
 %%
