@@ -45,39 +45,39 @@
 parse_msearch_resp(Resp) ->
     Headers = mochiweb_header:from_binary(Resp),
     Age = parse_max_age(Headers),
-    Loc = mochiweb_header:get_value(<<"LOCATION">>, Headers),
-    Svr = mochiweb_header:get_value(<<"SERVER">>, Headers),
-    ST  = mochiweb_header:get_value(<<"ST">>, Headers),
-    {Cat, Type, Ver} = case re:split(binary_to_list(ST), ":",
-                                     [{return, binary}]) of
+    Loc = list_to_binary(mochiweb_header:get_value("LOCATION", Headers)),
+    Svr = list_to_binary(mochiweb_header:get_value("SERVER", Headers)),
+    ST  = mochiweb_header:get_value("ST", Headers),
+    {Cat, Type, Ver} = case re:split(ST, ":", [{return, binary}]) of
        [_, _, C, T, V] ->
             {C, T, V};
-       [<<"upnp">>, ?UPNP_RD_NAME] ->
-            {<<"device">>, ?UPNP_RD_NAME, <<>>};
-       [<<"uuid">>| _] ->
-            {<<"uuid">>, <<>>, <<>>}
+       ["upnp">>, ?UPNP_RD_NAME] ->
+            {"device", ?UPNP_RD_NAME, <<>>};
+       ["uuid"| _] ->
+            {"uuid", <<>>, <<>>}
     end,
-    USN = mochiweb_header:get_value(<<"USN">>, Headers),
-    [_, UUID|_] = re:split(binary_to_list(USN), ":", [{return, binary}]),
+    USN = mochiweb_header:get_value("USN", Headers),
+    [_, UUID|_] = re:split(USN, ":", [{return, binary}]),
     case Cat of
-        <<"device">> ->
+        "device" ->
             {ok, device, [{type,    Type},
                           {ver,     Ver},
                           {uuid,    UUID},
                           {loc,     Loc},
                           {max_age, Age},
                           {server,  Svr}]};
-        <<"service">> ->
+        "service" ->
             {ok, service, [{type,   Type},
                            {ver,    Ver},
                            {uuid,   UUID},
                            {loc,    Loc}]};
-        <<"uuid">> ->
+        "uuid" ->
             {ok, uuid}
     end.
 
 parse_max_age(Headers) ->
-    case mochiweb_header:get_value(<<"CACHE-CONTROL">>, Headers) of
+    case list_to_binary(mochiweb_header:get_value("CACHE-CONTROL",
+                                                  Headers)) of
         <<"max-age = ", A/binary>> ->
             list_to_integer(binary_to_list(A));
         undefined ->
