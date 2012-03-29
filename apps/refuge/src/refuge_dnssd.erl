@@ -56,14 +56,14 @@ handle_cast(_Msg, State) ->
 handle_info({dnssd, Ref, {browse, add, Result}}, #state{browse_ref =
                                                            Ref}) ->
     spawn_link(fun() ->
-                maybe_notify(dnssd_nodeup, Result)
+                maybe_notify(nodeup, Result)
         end),
     lager:info(?MODULE_STRING " browse ~s: ~p~n", [remove, Result]),
     {noreply, state};
 handle_info({dnssd, Ref, {browse, remove, Result}}, #state{browse_ref =
                                                            Ref}) ->
     spawn_link(fun() ->
-                maybe_notify(dnssd_nodedown, Result)
+                maybe_notify(nodedown, Result)
         end),
 
     lager:info(?MODULE_STRING " browse ~s: ~p~n", [remove, Result]),
