@@ -12,7 +12,10 @@ terminate/2, code_change/3]).
 
 -define(SERVER, ?MODULE).
 
--record(state, {local_only, reg_ref, browse_ref}).
+-record(state, {local_only,
+                reg_ref=nil,
+                browse_ref,
+                http_ref=nil}).
 
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
@@ -31,8 +34,24 @@ init([]) ->
         true ->
             {ok, RegRef} = dnssd:register(service_name(), "_refuge._tcp",
                                        couch_util:get_port(https)),
+
+            {ok, HttpRef} = case couch_config:get("refuge",
+                                                  "advertise_dnssd_http",
+                                                  "true") of
+                "true" ->
+                    lager:info("register on ~p~n",
+                               [couch_util:get_port(couch_httpd)]),
+                    SName = service_name(),
+                    HttpName = << "Refuge (", SName/binary, ")" >>,
+                    dnssd:register(HttpName, "_http._tcp",
+                            couch_util:get_port(couch_httpd), [{path,
+                                                                "/_utils"}]);
+                _Else ->
+                    lager:info("got ~p", [_Else]),
+                    {ok, nil}
+            end,
             #state{local_only = true, reg_ref = RegRef,
-                   browse_ref = BrowseRef};
+                   browse_ref = BrowseRef, http_ref=HttpRef};
         false ->
             #state{local_only = true, browse_ref = BrowseRef}
     end,
@@ -72,9 +91,17 @@ handle_info({dnssd, Ref, {register, Change, Result}}, #state{reg_ref = Ref}) ->
 handle_info(_Info, State) ->
     {noreply, State}.
 
-terminate(_Reason, #state{browse_ref=BrowseRef, reg_ref=RegRef}) ->
+terminate(_Reason, #state{browse_ref=BrowseRef, reg_ref=RegRef,
+                          http_ref=HttpRef}) ->
     ok = dnssd:stop(BrowseRef),
-    ok = dnssd:stop(RegRef),
+    lists:foreach(fun(Ref) ->
+                case Ref of
+                    nil ->
+                        ok;
+                    _ ->
+                        ok = dnssd:stop(Ref)
+                end
+        end, [RegRef, HttpRef]),
     ok.
 
 code_change(_OldVsn, State, _Extra) ->
