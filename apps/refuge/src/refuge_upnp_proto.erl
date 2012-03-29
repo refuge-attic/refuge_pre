@@ -23,7 +23,8 @@
          parse_ctl_err_resp/1,
          parse_sub_resp/1,
          guess_sub_resp/1,
-         parse_notify_msg/1]).
+         parse_notify_msg/1,
+         parse_cache_header/1]).
 
 %% @doc Parse UPnP device's response to M-SEARCH request.
 %%
@@ -76,14 +77,51 @@ parse_msearch_resp(Resp) ->
     end.
 
 parse_max_age(Headers) ->
-    case list_to_binary(mochiweb_header:get_value("CACHE-CONTROL",
-                                                  Headers)) of
-        <<"max-age = ", A/binary>> ->
-            list_to_integer(binary_to_list(A));
+    case mochiweb_header:get_value("CACHE-CONTROL", Headers) of
         undefined ->
-            0
+            0;
+        Cache ->
+            CacheProps = parse_cache_header(Cache),
+            list_to_integer(proplists:get_value("max-age", CacheProps, "0"))
     end.
 
+
+%% @spec parse_header(string()) -> {Type, [{K, V}]}
+%% @doc  Parse a Content-Type like header, return the main Content-Type
+%%       and a property list of options.
+parse_cache_header(String) ->
+    %% TODO: This is exactly as broken as Python's cgi module.
+    %%       Should parse properly like mochiweb_cookies.
+    Parts = [string:strip(S) || S <- string:tokens(String, ";")],
+    F = fun (S, Acc) ->
+                case lists:splitwith(fun (C) -> C =/= $= end, S) of
+                    {"", _} ->
+                        %% Skip anything with no name
+                        Acc;
+                    {_, ""} ->
+                        %% Skip anything with no value
+                        Acc;
+                    {Name, [$\= | Value]} ->
+                        [{string:to_lower(string:strip(Name)),
+                          unquote_header(string:strip(Value))} | Acc]
+                end
+        end,
+    lists:foldr(F, [], Parts).
+
+
+unquote_header("\"" ++ Rest) ->
+    unquote_header(Rest, []);
+unquote_header(S) ->
+    S.
+
+unquote_header("", Acc) ->
+    lists:reverse(Acc);
+unquote_header("\"", Acc) ->
+    lists:reverse(Acc);
+unquote_header([$\\, C | Rest], Acc) ->
+    unquote_header(Rest, [C | Acc]);
+unquote_header([C | Rest], Acc) ->
+    unquote_header(Rest, [C | Acc]).
 
 %% @doc Parses given description of a UPnP device.
 %%
