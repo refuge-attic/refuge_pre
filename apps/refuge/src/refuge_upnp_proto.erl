@@ -49,29 +49,29 @@ parse_msearch_resp(Resp) ->
     Svr = list_to_binary(mochiweb_header:get_value("SERVER", Headers)),
     ST  = mochiweb_header:get_value("ST", Headers),
     {Cat, Type, Ver} = case re:split(ST, ":", [{return, binary}]) of
-       [_, _, C, T, V] ->
+        [_, _, C, T, V] ->
             {C, T, V};
-       ["upnp">>, ?UPNP_RD_NAME] ->
-            {"device", ?UPNP_RD_NAME, <<>>};
-       ["uuid"| _] ->
-            {"uuid", <<>>, <<>>}
+        [<<"upnp">>, ?UPNP_RD_NAME] ->
+            {<<"device">>, ?UPNP_RD_NAME, <<>>};
+        [<<"uuid">>| _] ->
+            {<<"uuid">>, <<>>, <<>>}
     end,
     USN = mochiweb_header:get_value("USN", Headers),
     [_, UUID|_] = re:split(USN, ":", [{return, binary}]),
     case Cat of
-        "device" ->
+        <<"device">> ->
             {ok, device, [{type,    Type},
                           {ver,     Ver},
                           {uuid,    UUID},
                           {loc,     Loc},
                           {max_age, Age},
                           {server,  Svr}]};
-        "service" ->
+        <<"service">> ->
             {ok, service, [{type,   Type},
                            {ver,    Ver},
                            {uuid,   UUID},
                            {loc,    Loc}]};
-        "uuid" ->
+        <<"uuid">> ->
             {ok, uuid}
     end.
 
