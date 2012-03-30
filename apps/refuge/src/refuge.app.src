@@ -12,6 +12,7 @@
                   sasl,
                   ssl,
                   couch,
+                  couch_httpd,
                   cowboy,
                   ibrowse,
                   dnssd
