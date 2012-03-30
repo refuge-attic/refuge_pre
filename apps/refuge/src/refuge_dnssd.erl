@@ -94,13 +94,11 @@ handle_info(_Info, State) ->
 terminate(_Reason, #state{browse_ref=BrowseRef, reg_ref=RegRef,
                           http_ref=HttpRef}) ->
     ok = dnssd:stop(BrowseRef),
-    lists:foreach(fun(Ref) ->
-                case Ref of
-                    nil ->
-                        ok;
-                    _ ->
-                        ok = dnssd:stop(Ref)
-                end
+    lists:foreach(fun
+            (nil) ->
+                ok;
+            (Ref) ->
+                ok = dnssd:stop(Ref)
         end, [RegRef, HttpRef]),
     ok.
 
