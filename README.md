@@ -17,6 +17,9 @@ Information is on each nodes.
 - Fully opensource. All the sources are on refuge GIT repository
   (http://github.com/refuge) under Apache License 2.
 
+[![Build Status](https://secure.travis-ci.org/refuge/refuge.png)](http://travis-ci.org/refuge/refuge)
+
+
 ## Requirements
 
 - OS supported: Linux, OSX, BSDs (windows support is coming)
