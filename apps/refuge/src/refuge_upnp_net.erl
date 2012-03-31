@@ -252,8 +252,9 @@ handle_info({udp, _Socket, _IP, _Port, Packet}, State) ->
             refuge_upnp_entity:create(service, S);
         {ok, uuid} ->
             ok;
-        {error, _Reason} ->
+        {error, Reason} ->
             %% malformed UPNP headers
+            lager:debug("malformed UPNP header: ~p [~p]~n", [Reason, Packet]),
             ok
     end,
     {noreply, State};

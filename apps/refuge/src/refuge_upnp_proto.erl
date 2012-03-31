@@ -108,9 +108,8 @@ parse_max_age(Headers) ->
     end.
 
 
-%% @spec parse_header(string()) -> {Type, [{K, V}]}
-%% @doc  Parse a Content-Type like header, return the main Content-Type
-%%       and a property list of options.
+%% @spec parse_cache_header(string()) -> {Type, [{K, V}]}
+%% @doc  Parse a Cache header
 parse_cache_header(String) ->
     %% TODO: This is exactly as broken as Python's cgi module.
     %%       Should parse properly like mochiweb_cookies.
