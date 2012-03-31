@@ -157,7 +157,7 @@ add_port_mapping(Service, Proto, Port) ->
 %% gen_server callbacks
 %%===================================================================
 init([]) ->
-    {ok, Sock} = gen_udp:open(0, [{active, true}, inet]),
+    {ok, Sock} = gen_udp:open(0, [{active, true}, inet, binary]),
     {ok, #state{ssdp_sock = Sock}, 0}.
 
 
