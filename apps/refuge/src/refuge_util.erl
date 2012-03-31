@@ -13,6 +13,7 @@
 -export([ssl_ip/0]).
 -export([get_unix_timestamp/1]).
 -export([ipv6_supported/0, get_addrs/1, address_to_binary/2]).
+-export([to_upper/1, to_lower/1]).
 
 sh(Command) ->
     sh(Command, []).
@@ -251,6 +252,40 @@ address_to_binary({_, _, _, _}=Ip, Port) ->
 address_to_binary({_,_,_,_,_,_,_,_}=Ip, Port) ->
     iolist_to_binary(["[", inet_parse:ntoa(Ip), "]:",
             integer_to_list(Port)]).
+
+
+%% @doc converts all characters in the specified binary to uppercase.
+-spec to_upper(binary()) -> binary().
+to_upper(Bin) ->
+  to_upper(Bin, <<>>).
+
+%% @private
+to_upper(<<>>, Acc) ->
+  Acc;
+to_upper(<<C, Rest/binary>>, Acc) when $a =< C, C =< $z ->
+  to_upper(Rest, <<Acc/binary, (C-32)>>);
+to_upper(<<195, C, Rest/binary>>, Acc) when 160 =< C, C =< 182 -> %% A-0 with tildes plus enye
+  to_upper(Rest, <<Acc/binary, 195, (C-32)>>);
+to_upper(<<195, C, Rest/binary>>, Acc) when 184 =< C, C =< 190 -> %% U and Y with tilde plus greeks
+  to_upper(Rest, <<Acc/binary, 195, (C-32)>>);
+to_upper(<<C, Rest/binary>>, Acc) ->
+  to_upper(Rest, <<Acc/binary, C>>).
+
+%% @doc converts all characters in the specified binary to lowercase
+-spec to_lower(binary()) -> binary().
+to_lower(Bin) ->
+  to_lower(Bin, <<>>).
+
+to_lower(<<>>, Acc) ->
+  Acc;
+to_lower(<<C, Rest/binary>>, Acc) when $A =< C, C =< $Z ->
+  to_lower(Rest, <<Acc/binary, (C+32)>>);
+to_lower(<<195, C, Rest/binary>>, Acc) when 128 =< C, C =< 150 -> %% A-0 with tildes plus enye
+  to_lower(Rest, <<Acc/binary, 195, (C+32)>>);
+to_lower(<<195, C, Rest/binary>>, Acc) when 152 =< C, C =< 158 -> %% U and Y with tilde plus greeks
+  to_lower(Rest, <<Acc/binary, 195, (C+32)>>);
+to_lower(<<C, Rest/binary>>, Acc) ->
+  to_lower(Rest, <<Acc/binary, C>>).
 
 
 %%% private
