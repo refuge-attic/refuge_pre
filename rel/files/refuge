@@ -233,8 +233,12 @@ case "$1" in
 
         $RCONSOLE $@
         ;;
+    uris)
+        $NODETOOL rpc couch_httpd display_uris
+        ;;
     *)
-        echo "Usage: $SCRIPT {start|start_front|stop|restart|reboot|ping|console|console_clean|attach|makecert}"
+        echo "Usage: $SCRIPT
+        {start|start_front|stop|restart|reboot|ping|console|console_clean|attach|makecert|uris}"
         exit 1
         ;;
 esac
