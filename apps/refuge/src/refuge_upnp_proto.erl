@@ -44,15 +44,14 @@
                                     | {ok, uuid}
                                     | {error, _Reason}.
 parse_msearch_resp(Resp) ->
-    Headers = mochiweb_headers:from_binary(Resp),
+    Headers = parse_headers(Resp),
     Age = parse_max_age(Headers),
-    case get_header(<<"LOCATION">>, Headers) of
+    case refuge_util:get_value(<<"LOCATION">>, Headers) of
         undefined ->
             {error, no_loc_header};
-        Loc0 ->
-            Loc = binary_to_list(Loc0),
-            Svr = get_header(<<"SERV">>, Headers, <<"">>),
-            case  get_header(<<"ST">>, Headers) of
+        Loc ->
+            Svr = refuge_util:get_value(<<"SERV">>, Headers, <<"">>),
+            case  refuge_util:get_value(<<"ST">>, Headers) of
             undefined ->
                 {error, no_st_header};
             ST ->
@@ -65,7 +64,7 @@ parse_msearch_resp(Resp) ->
                     [<<"uuid">>| _] ->
                         {<<"uuid">>, <<>>, <<>>}
                 end,
-                case  get_header(<<"USN">>, Headers) of
+                case  refuge_util:get_value(<<"USN">>, Headers) of
                 undefined ->
                     {error, no_usn_header};
                 USN ->
@@ -103,22 +102,13 @@ parse_headers(Raw, Acc) ->
             parse_headers(Rest, Acc); %% bad header format
         {ok, {http_header, _, H, _, V}, Rest} ->
             H1 = refuge_util:to_upper(refuge_util:to_binary(H)),
-            parse_headers(Rest, [{H1,refuge_util:to_binary(V)} | Acc])
-    end.
-
-get_header(K, H) ->
-    get_header(K, H, undefined).
-
-get_header(K, H, D) ->
-    case lists:keysearch(K, 1, H) of
-        {value, {K,V}} ->
-            V;
-        false ->
-            D
+            parse_headers(Rest, [{H1,refuge_util:to_binary(V)} | Acc]);
+        _ ->
+            Acc
     end.
 
 parse_max_age(Headers) ->
-    case get_header(<<"CACHE-CONTROL">>, Headers) of
+    case refuge_util:get_value(<<"CACHE-CONTROL">>, Headers) of
         undefined ->
             0;
         Cache ->
