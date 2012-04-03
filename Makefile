@@ -11,7 +11,7 @@ DISTDIR=       rel/archive
 all: deps compile
 
 compile:
-	@rebar compile
+	@WITHOUT_CURL=1 rebar compile
 
 deps:
 	@rebar get-deps
@@ -23,7 +23,7 @@ distclean: clean devclean relclean
 	@rebar delete-deps
 
 rel: relclean deps
-	@rebar compile generate
+	@WITHOUT_CURL=1 rebar compile generate
 
 relclean:
 	@rm -rf rel/refuge
@@ -40,7 +40,7 @@ devrel: dev1 dev2 dev3
 
 dev1 dev2 dev3:
 	@mkdir -p dev
-	@(cd rel && rebar generate target_dir=../dev/$@ overlay_vars=vars/$@.config)
+	@(cd rel && WITHOUT_CURL=1 rebar generate target_dir=../dev/$@ overlay_vars=vars/$@.config)
 	# generate a custom certificate for each dev node.
 	@./dev/$@/bin/refuge makecert
 
