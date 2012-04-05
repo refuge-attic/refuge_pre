@@ -354,7 +354,8 @@ build_sub_url(Service) ->
     PubUrl = lists:append(["<http://", PubHost, "/callme>"]),
     SubUrl = lists:append(["http://",
                            decode_host(binary_to_list(proplists:get_value(loc, Service))),
-                           binary_to_list(proplists:get_value(event_path, Service))]),
+                           binary_to_list(proplists:get_value(event_path,
+                                                              Service, ""))]),
     {PubUrl, SubUrl}.
 
 
