@@ -350,12 +350,12 @@ invoke_action(Service, Action, Args) ->
 build_sub_url(Service) ->
     PubHost = lists:append([proplists:get_value(local_addr, Service),
                             ":", integer_to_list(refuge_upnp_handler:get_port())]),
+
+    Host = decode_host(binary_to_list(proplists:get_value(loc, Service))),
+    EventPath = binary_to_list(proplists:get_value(event_path, Service)),
     %% enclosing <> is required by the spec.
     PubUrl = lists:append(["<http://", PubHost, "/callme>"]),
-    SubUrl = lists:append(["http://",
-                           decode_host(binary_to_list(proplists:get_value(loc, Service))),
-                           binary_to_list(proplists:get_value(event_path,
-                                                              Service, ""))]),
+    SubUrl = lists:append(["http://", Host, EventPath]),
     {PubUrl, SubUrl}.
 
 
