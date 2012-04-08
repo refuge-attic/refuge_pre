@@ -62,9 +62,11 @@ parse_msearch_resp(Resp) ->
                     [<<"upnp">>, ?UPNP_RD_NAME] ->
                         {<<"device">>, ?UPNP_RD_NAME, <<>>};
                     [<<"uuid">>| _] ->
-                        {<<"uuid">>, <<>>, <<>>}
+                        {<<"uuid">>, <<>>, <<>>};
+                    _ ->
+                        {error, unknown_st_headers}
                 end,
-                case  refuge_util:get_value(<<"USN">>, Headers) of
+                case refuge_util:get_value(<<"USN">>, Headers) of
                 undefined ->
                     {error, no_usn_header};
                 USN ->
@@ -83,7 +85,10 @@ parse_msearch_resp(Resp) ->
                                            {uuid,   UUID},
                                            {loc,    Loc}]};
                         <<"uuid">> ->
-                            {ok, uuid}
+                            {ok, uuid};
+                        _ ->
+                            {error, unknown_st_headers}
+
                     end
                 end
             end
