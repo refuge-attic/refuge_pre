@@ -135,7 +135,7 @@ parse_ip([]) ->
     nil;
 parse_ip([{0, 0, 0, 0}]) ->
     {ok, Ifs} = inet:getif(),
-    parse_ip([Ip || {Ip, _, _} <- Ifs]);
+    parse_ip(lists:reverse([Ip || {Ip, _, _} <- Ifs]));
 parse_ip([{192, 168, _, _}=Ip|_]) ->
     inet_parse:ntoa(Ip);
 parse_ip([{172, 16, _, _}=Ip|_]) ->
