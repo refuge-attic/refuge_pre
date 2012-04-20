@@ -3,6 +3,7 @@ REFUGE_TAG=	$(shell git describe --tags --always)
 REVISION?=	$(shell echo $(REFUGE_TAG) | sed -e 's/^$(REPO)-//')
 PKG_VERSION?=	$(shell echo $(REVISION) | tr - .)
 WITHOUT_CURL?=1
+REBAR?=./rebar
 
 DESTDIR?=
 DISTDIR=       rel/archive
@@ -13,19 +14,19 @@ DISTDIR=       rel/archive
 all: deps compile
 
 compile:
-	@WITHOUT_CURL=$(WITHOUT_CURL) rebar compile
+	@WITHOUT_CURL=$(WITHOUT_CURL) $(REBAR) compile
 
 deps:
-	@rebar get-deps
+	@$(REBAR) get-deps
 
 clean: devclean
-	@rebar clean
+	@$(REBAR) clean
 
 distclean: clean devclean relclean
-	@rebar delete-deps
+	@$(REBAR) delete-deps
 
 rel: relclean deps
-	@WITHOUT_CURL=$(WITHOUT_CURL) rebar compile generate
+	@WITHOUT_CURL=$(WITHOUT_CURL) $(REBAR) compile generate
 
 relclean:
 	@rm -rf rel/refuge
@@ -42,7 +43,7 @@ devrel: dev1 dev2 dev3
 
 dev1 dev2 dev3:
 	@mkdir -p dev
-	@(cd rel && WITHOUT_CURL=$(WITHOUT_CURL) rebar generate target_dir=../dev/$@ overlay_vars=vars/$@.config)
+	@(cd rel && WITHOUT_CURL=$(WITHOUT_CURL) $(REBAR) generate target_dir=../dev/$@ overlay_vars=vars/$@.config)
 	# generate a custom certificate for each dev node.
 	@./dev/$@/bin/refuge makecert
 
