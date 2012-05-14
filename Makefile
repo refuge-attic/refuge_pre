@@ -42,7 +42,6 @@ Development nodes are built, and can be started using ./dev/dev[123]/bin/refuge.
 devrel: dev1 dev2 dev3
 
 dev1 dev2 dev3:
-	@epmd -daemon
 	@mkdir -p dev
 	@(cd rel && WITHOUT_CURL=$(WITHOUT_CURL) ../$(REBAR) generate target_dir=../dev/$@ overlay_vars=vars/$@.config)
 	# generate a custom certificate for each dev node.
