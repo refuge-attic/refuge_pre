@@ -4,19 +4,33 @@ REVISION?=	$(shell echo $(REFUGE_TAG) | sed -e 's/^$(REPO)-//')
 PKG_VERSION?=	$(shell echo $(REVISION) | tr - .)
 WITHOUT_CURL?=1
 REBAR?=./rebar
+REBAR_DIR=support
+REBAR_MASTER=git://github.com/basho/rebar.git
 
 DESTDIR?=
-DISTDIR=       rel/archive
+DISTDIR= rel/archive
 
 
-.PHONY: rel stagedevrel deps
+.PHONY: rebar rel stagedevrel deps
 
 all: deps compile
 
-compile:
+bootstrap = if [ ! -d $(REBAR_DIR) ]; then \
+    mkdir $(REBAR_DIR) && \
+		git clone $(REBAR_MASTER) $(REBAR_DIR)/rebar && \
+		cd $(REBAR_DIR)/rebar && \
+		./bootstrap && \
+		mv rebar ../../ && \
+		cd ../../; \
+		fi
+
+rebar:
+	@$(call bootstrap) > /dev/null
+
+compile: rebar
 	@WITHOUT_CURL=$(WITHOUT_CURL) $(REBAR) compile
 
-deps:
+deps: rebar
 	@$(REBAR) get-deps
 
 clean: devclean
@@ -51,7 +65,7 @@ devclean:
 	@rm -rf dev
 
 ##
-## release tarbals
+## release tarballs
 ##
 
 archive = git archive --format=tar --prefix=$(1)/ HEAD | (cd $(2) && tar xf -)
@@ -87,4 +101,3 @@ pkgclean:
 .PHONY: package
 
 export PKG_VERSION REPO REVISION REFUGE_TAG
-
