@@ -4,7 +4,7 @@ REVISION?=	$(shell echo $(REFUGE_TAG) | sed -e 's/^$(REPO)-//')
 PKG_VERSION?=	$(shell echo $(REVISION) | tr - .)
 WITHOUT_CURL?=1
 REBAR?=./rebar
-REBAR_DIR=support
+SUPPORT_DIR=support
 REBAR_MASTER=git://github.com/basho/rebar.git
 
 DESTDIR?=
@@ -15,19 +15,20 @@ DISTDIR= rel/archive
 
 all: deps compile
 
-bootstrap = if [ ! -d $(REBAR_DIR) ]; then \
-    mkdir $(REBAR_DIR) && \
-		git clone $(REBAR_MASTER) $(REBAR_DIR)/rebar && \
-		cd $(REBAR_DIR)/rebar && \
-		./bootstrap && \
-		mv rebar ../../ && \
-		cd ../../; \
-		fi
-
+bootstrap = if [ ! -d $(SUPPORT_DIR)/rebar ]; then \
+			mkdir -p $(SUPPORT_DIR)/rebar && \
+			git clone $(REBAR_MASTER) $(SUPPORT_DIR)/rebar; \
+			fi
 rebar:
+	@mkdir -p $(SUPPORT_DIR)
+	@echo "==> fetch rebar sources" 
 	@$(call bootstrap) > /dev/null
+	@echo "==> build rebar"
+	@rm -rf  $(SUPPORT_DIR)/rebar/rebar
+	@(cd $(SUPPORT_DIR)/rebar && ./bootstrap)
+	@cp $(SUPPORT_DIR)/rebar/rebar .
 
-compile: rebar
+compile:
 	@WITHOUT_CURL=$(WITHOUT_CURL) $(REBAR) compile
 
 deps: rebar
@@ -38,6 +39,7 @@ clean: devclean
 
 distclean: clean devclean relclean
 	@$(REBAR) delete-deps
+	@rm -rf support/rebar
 
 rel: relclean deps
 	@WITHOUT_CURL=$(WITHOUT_CURL) $(REBAR) compile generate
@@ -84,7 +86,7 @@ buildtar = mkdir distdir && \
                      git rev-list --max-count=1 HEAD > ../../../$(REFUGE_TAG)/$${dep}/priv/git.vsn && \
                      cd ../..; done
 
-distdir:
+distdir: rebar
 	$(if $(REFUGE_TAG), $(call buildtar), $(error "You can't generate a release tarball from a non-tagged revision. Run 'git checkout <tag>', then 'make dist'"))
 
 dist $(REFUGE_TAG).tar.gz: distdir
