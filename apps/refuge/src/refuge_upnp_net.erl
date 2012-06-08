@@ -102,23 +102,29 @@ description(Cat, Prop) ->
 %% @end
 -spec subscribe(refuge_types:upnp_service()) -> {ok, string()} | {error, _Reason}.
 subscribe(Service) ->
-    {PubUrl, SubUrl} = build_sub_url(Service),
-    case refuge_httpc:request(subscribe, SubUrl, ["200"], [],
-                              [{"TIMEOUT", "infinite"}, {"NT", "upnp:event"},
-                               {"CALLBACK", PubUrl}]) of
-        {ok, _Status, Headers, _Body} ->
-            lager:debug("uPnP subscription done: ~s", [SubUrl]),
-            Sid = refuge_upnp_proto:parse_sub_resp(Headers),
-            case Sid of
-                undefined ->
-                    refuge_event:notify({malformed_upnp_sub_resp, Headers}),
-                    {error, <<"malformed upnp sub resp">>};
-                _ ->
-                    {ok, Sid}
-            end;
+    PubSub = build_sub_url(Service),
+
+    case PubSub of
         {error, Reason} ->
-            refuge_event:notify({upnp_sub_error, Reason}),
-            {error, Reason}
+            {error, Reason};
+        {PubUrl, SubUrl} ->
+            case refuge_httpc:request(subscribe, SubUrl, ["200"], [],
+                                      [{"TIMEOUT", "infinite"}, {"NT", "upnp:event"},
+                                       {"CALLBACK", PubUrl}]) of
+                {ok, _Status, Headers, _Body} ->
+                    lager:debug("uPnP subscription done: ~s", [SubUrl]),
+                    Sid = refuge_upnp_proto:parse_sub_resp(Headers),
+                    case Sid of
+                        undefined ->
+                            refuge_event:notify({malformed_upnp_sub_resp, Headers}),
+                            {error, <<"malformed upnp sub resp">>};
+                        _ ->
+                            {ok, Sid}
+                    end;
+                {error, Reason} ->
+                    refuge_event:notify({upnp_sub_error, Reason}),
+                    {error, Reason}
+            end
     end.
 
 
@@ -174,32 +180,37 @@ handle_call({invoke_action, Service, Action, Args}, _From, S) ->
     Type = proplists:get_value(type, Service),
     Ver = proplists:get_value(ver, Service),
     ActionUrl = build_ctl_url(Service),
-    ReqBody = refuge_upnp_proto:build_ctl_msg(Service, Action, Args),
-    SoapAct = lists:append(["\"urn:schemas-upnp-org:service:",
-                            binary_to_list(Type),
-                            ":", binary_to_list(Ver),
-                            "#", Action, "\""]),
-
-    case refuge_httpc:request(post, ActionUrl, ["200"], [],
-                              [{"SOAPACTION", SoapAct},
-                               {"CONTENT-TYPE", "text/xml; charset=\"utf-8\""}],
-                               ReqBody) of
-        {ok, _, _, _} ->
-            {reply, ok, S};
-        {error, {ok, "500", _, RespBody}} ->
-            {ECode, EDesc} = refuge_upnp_proto:parse_ctl_err_resp(RespBody),
-            {reply, {failed, ECode, EDesc}, S};
-        {error, {ok, "405", _, _}} ->
-            %% UPnP 1.0 spec indicates an invocation request may be rejected
-            %% with a response of "405 Method Not Allowed", then a control
-            %% point should retry the same request with HTTP M-POST method.
-            %%
-            %% Unfortunately Erlang httpc module doesn't support HTTP
-            %% extension method, yet; ignores it and doesn't retry.
-            lager:warning("uPnP action failed, 405, M-POST not supported"),
-            {reply, {failed, 405, "M-POST not supported"}, S};
-        Error ->
-            {reply, Error, S}
+    case ActionUrl of
+        {error, Reason} ->
+            {reply, {error, Reason}, S};
+        _ ->
+            ReqBody = refuge_upnp_proto:build_ctl_msg(Service, Action, Args),
+            SoapAct = lists:append(["\"urn:schemas-upnp-org:service:",
+                                    binary_to_list(Type),
+                                    ":", binary_to_list(Ver),
+                                    "#", Action, "\""]),
+        
+            case refuge_httpc:request(post, ActionUrl, ["200"], [],
+                                      [{"SOAPACTION", SoapAct},
+                                       {"CONTENT-TYPE", "text/xml; charset=\"utf-8\""}],
+                                       ReqBody) of
+                {ok, _, _, _} ->
+                    {reply, ok, S};
+                {error, {ok, "500", _, RespBody}} ->
+                    {ECode, EDesc} = refuge_upnp_proto:parse_ctl_err_resp(RespBody),
+                    {reply, {failed, ECode, EDesc}, S};
+                {error, {ok, "405", _, _}} ->
+                    %% UPnP 1.0 spec indicates an invocation request may be rejected
+                    %% with a response of "405 Method Not Allowed", then a control
+                    %% point should retry the same request with HTTP M-POST method.
+                    %%
+                    %% Unfortunately Erlang httpc module doesn't support HTTP
+                    %% extension method, yet; ignores it and doesn't retry.
+                    lager:warning("uPnP action failed, 405, M-POST not supported"),
+                    {reply, {failed, 405, "M-POST not supported"}, S};
+                Error ->
+                    {reply, Error, S}
+            end
     end;
 handle_call(_Request, _From, S) ->
     {reply, ok, S}.
@@ -348,26 +359,39 @@ invoke_action(Service, Action, Args) ->
 %% Construct publisher and subscriber Url for given sercvice.
 -spec build_sub_url(refuge_types:upnp_service()) -> {string(), string()}.
 build_sub_url(Service) ->
-    PubHost = lists:append([proplists:get_value(local_addr, Service),
-                            ":", integer_to_list(refuge_upnp_handler:get_port())]),
+    HostValue = proplists:get_value(loc, Service),
 
-    Host = decode_host(binary_to_list(proplists:get_value(loc, Service))),
-    EventPath = binary_to_list(proplists:get_value(event_path, Service)),
-    %% enclosing <> is required by the spec.
-    PubUrl = lists:append(["<http://", PubHost, "/callme>"]),
-    SubUrl = lists:append(["http://", Host, EventPath]),
-    {PubUrl, SubUrl}.
+    case HostValue of
+        undefined ->
+            {error, no_host};
+        _ ->
+            PubHost = lists:append([proplists:get_value(local_addr, Service),
+                                    ":", integer_to_list(refuge_upnp_handler:get_port())]),
+        
+            Host = decode_host(binary_to_list(HostValue)),
+            EventPath = binary_to_list(proplists:get_value(event_path, Service)),
+            %% enclosing <> is required by the spec.
+            PubUrl = lists:append(["<http://", PubHost, "/callme>"]),
+            SubUrl = lists:append(["http://", Host, EventPath]),
+            {PubUrl, SubUrl}
+    end.
 
 
 %% Construct given service's full control url.
 -spec build_ctl_url(proplists:proplist()) -> string().
 build_ctl_url(Service) ->
-    Url = binary_to_list(proplists:get_value(loc, Service)),
-    {Scheme, _UserInfo, _Host, _Port, _Path, _Query} =
-        refuge_http_uri:parse(Url),
-    _CtlUrl = lists:append([atom_to_list(Scheme), "://",
-                            decode_host(Url),
-                            binary_to_list(proplists:get_value(ctl_path, Service))]).
+    HostValue = proplists:get_value(loc, Service),
+    case HostValue of
+        undefined ->
+            {error, no_host};
+        _ ->
+            Url = binary_to_list(HostValue),
+            {Scheme, _UserInfo, _Host, _Port, _Path, _Query} =
+                refuge_http_uri:parse(Url),
+            _CtlUrl = lists:append([atom_to_list(Scheme), "://",
+                                    decode_host(Url),
+                                    binary_to_list(proplists:get_value(ctl_path, Service))])
+    end.
 
 
 % Steals this from refuge_http.
