@@ -33,18 +33,18 @@ init([]) ->
     NewState = case can_register() of
         true ->
             {ok, RegRef} = dnssd:register(service_name(), "_refuge._tcp",
-                                       couch_util:get_port(https)),
+                                       couch_httpd_util:get_port(https)),
 
             {ok, HttpRef} = case couch_config:get("refuge",
                                                   "advertise_dnssd_http",
                                                   "true") of
                 "true" ->
                     lager:info("register on ~p~n",
-                               [couch_util:get_port(couch_httpd)]),
+                               [couch_httpd_util:get_port(http)]),
                     SName = service_name(),
                     HttpName = << "Refuge (", SName/binary, ")" >>,
                     dnssd:register(HttpName, "_http._tcp",
-                            couch_util:get_port(couch_httpd), [{path,
+                            couch_httpd_util:get_port(http), [{path,
                                                                 "/_utils"}]);
                 _Else ->
                     lager:info("got ~p", [_Else]),
