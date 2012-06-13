@@ -1,6 +1,4 @@
-
 -module(refuge_sup).
-
 -behaviour(supervisor).
 
 -include("supervisor.hrl").
@@ -27,6 +25,8 @@ init([]) ->
     Tables       = ?CHILD(refuge_table),
     EventManager = ?CHILD(refuge_event),
 
+    HTTP = ?SUP(refuge_web_sup),
+
     %% UPnP subsystemm is optional.
     UPNPSup = case couch_config:get("refuge", "use_upnp", "false") of
         "true" ->
@@ -44,5 +44,5 @@ init([]) ->
             []
     end,
 
-    {ok, { {one_for_one, 5, 10}, [Tables, EventManager] ++ UPNPSup
-          ++ DNSSD} }.
+    Children = [HTTP, Tables, EventManager] ++  UPNPSup ++  DNSSD,
+    {ok, { {one_for_one, 10, 10}, Children} }.

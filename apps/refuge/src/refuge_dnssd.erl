@@ -30,32 +30,33 @@ list_services() ->
 
 init([]) ->
     {ok, BrowseRef} = dnssd:browse("_refuge._tcp"),
-    NewState = case can_register() of
+    RegRef = case can_register() of
         true ->
             {ok, SPort} = couch_httpd_util:get_port(https),
-            {ok, RegRef} = dnssd:register(service_name(),
+            {ok, RegRef0} = dnssd:register(service_name(),
                                           "_refuge._tcp", SPort),
-
-            {ok, HttpRef} = case couch_config:get("refuge",
-                                                  "advertise_dnssd_http",
-                                                  "true") of
-                "true" ->
-                    {ok, Port} = couch_httpd_util:get_port(http),
-                    lager:info("register on ~p~n", [Port]),
-                    SName = service_name(),
-                    HttpName = << "Refuge (", SName/binary, ")" >>,
-                    dnssd:register(HttpName, "_http._tcp", Port,
-                                   [{path, "/_utils"}]);
-                _Else ->
-                    lager:info("got ~p", [_Else]),
-                    {ok, nil}
-            end,
-            #state{local_only = true, reg_ref = RegRef,
-                   browse_ref = BrowseRef, http_ref=HttpRef};
-        false ->
-            #state{local_only = true, browse_ref = BrowseRef}
+            RegRef0;
+        _ ->
+            nil
     end,
-    {ok, NewState}.
+    {ok, HttpRef} = case couch_config:get("refuge",
+                                          "advertise_dnssd_http",
+                                          "true") of
+        "true" ->
+            {ok, Port} = refuge_web:get_port(refuge_ui),
+            lager:info("register on ~p~n", [Port]),
+            SName = service_name(),
+            HttpName = << "Refuge (", SName/binary, ")" >>,
+            dnssd:register(HttpName, "_http._tcp", Port,
+                           [{path, "/_utils"}]);
+        _Else ->
+            lager:info("got ~p", [_Else]),
+            {ok, nil}
+    end,
+    {ok, #state{reg_ref=RegRef,
+                browse_ref=BrowseRef,
+                http_ref=HttpRef}}.
+
 
 handle_call(list_services, _From, #state{} = State) ->
     {ok, RegResults} = dnssd:results(State#state.reg_ref),
@@ -133,7 +134,7 @@ service_name() ->
     refuge_util:new_id().
 
 is_local() ->
-    case couch_config:get(<<"httpd">>, <<"bind_address">>) of
+    case couch_config:get("httpd", "bind_address") of
         "127." ++ _ ->
             true;
         "::1" ->
