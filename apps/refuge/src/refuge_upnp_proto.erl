@@ -54,8 +54,8 @@ parse_msearch_resp(Resp) ->
             case  refuge_util:get_value(<<"ST">>, Headers) of
             undefined ->
                 {error, no_st_header};
-            {error, _Error} ->
-                {error, unknown_st_headers};
+            {error, _} = Error->
+                Error;
             ST ->
                 {Cat, Type, Ver} = case re:split(ST, <<":">>, [{return,
                                                                 binary}]) of
