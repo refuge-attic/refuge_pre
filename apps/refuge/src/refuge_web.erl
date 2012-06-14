@@ -61,10 +61,8 @@ get_protocol_options() ->
     CouchDBOptions = [{args, Args}],
 
     Dispatch = [
-        {'_', [{[<<"local">>, '...'], refuge_local_handler, CouchDBOptions},
-               {'_', refuge_main_handler, []}]}
+        {'_', [{'_', refuge_local_handler, CouchDBOptions}]}
     ],
-
     {ok, [{dispatch, Dispatch}]}.
 
 

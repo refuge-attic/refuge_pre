@@ -40,24 +40,28 @@ init(_Info, Req, Opts) ->
                     mochiweb_headers:insert(K, binary_to_list(V), T)
             end, mochiweb_headers:empty(), Headers),
 
-    %% fix raw path
-    %%
-    Path1 = case binary:split(Path, <<"/local">>) of
-        [_, <<>>] -> <<"/">>;
-        [_, P] -> P
-    end,
+    MochiHeaders1 = mochiweb_headers:enter("x-couchdb-vhost-path",
+                                           binary_to_list(Path),
+                                           MochiHeaders),
 
+    %% fix raw path
+    Prefix = << "/rc_refuge/_design/ui/_rewrite" >>,
+    Path1 = case Path of
+        <<>> -> << Prefix/binary, "/" >>;
+        _ -> << Prefix/binary, Path/binary >>
+    end,
     RawPath = case QS of
         <<>> ->
             Path1;
         _ ->
             << Path1/binary, "?", QS/binary >>
     end,
+
     MochiReq = mochicow_request:new(MochiSocket,
                                     Method,
                                     binary_to_list(RawPath),
                                     Version,
-                                    MochiHeaders,
+                                    MochiHeaders1,
                                     Buffer),
     {ok, Req, #state{mochi_req=MochiReq, args=Args}}.
 

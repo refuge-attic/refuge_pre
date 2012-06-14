@@ -25,4 +25,9 @@ start_link() ->
 
 init([]) ->
     HTTP = refuge_web:init(),
+
+    %% initialize the UI app if needed
+    Path = filename:join([refuge_util:priv_dir(), "ui"]),
+    ok = refuge_couchapp:save_couchapp(<<"rc_refuge">>, Path, [create_db]),
+
     {ok, { {one_for_one, 10, 10}, [HTTP]} }.

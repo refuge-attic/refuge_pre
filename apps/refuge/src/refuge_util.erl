@@ -1,19 +1,35 @@
 -module(refuge_util).
 
--export([sh/1, sh/2,
+-export([priv_dir/0,
+         sh/1, sh/2,
          find_executable/1,
+         relpath/2,
+         md5_file/1,
          new_id/0,
          merge_proplists/2,
          get_app_env/2,
          wait/1,
          shutdown/1]).
 -export([oauth_header/3]).
--export([get_value/2, get_value/3]).
+-export([get_value/2, get_value/3, set_value/3]).
 -export([to_list/1, to_binary/1, to_integer/1, to_atom/1]).
 -export([ssl_ip/0]).
 -export([get_unix_timestamp/1]).
 -export([ipv6_supported/0, get_addrs/1, address_to_binary/2]).
 -export([to_upper/1, to_lower/1]).
+
+
+-define(BLOCKSIZE, 32768).
+
+priv_dir() ->
+    case code:priv_dir(refuge) of
+        {error, _} ->
+            %% try to get relative priv dir. useful for tests.
+            EbinDir = filename:dirname(code:which(?MODULE)),
+            AppPath = filename:dirname(EbinDir),
+            filename:join(AppPath, "priv");
+        Dir -> Dir
+    end.
 
 sh(Command) ->
     sh(Command, []).
@@ -43,6 +59,56 @@ find_executable(Name) ->
         false -> false;
         Path ->
             filename:nativename(Path)
+    end.
+
+%% @spec partition(String, Sep) -> {String, [], []} | {Prefix, Sep, Postfix}
+%% @doc Inspired by Python 2.5's str.partition:
+%%      partition("foo/bar", "/") = {"foo", "/", "bar"},
+%%      partition("foo", "/") = {"foo", "", ""}.
+partition(String, Sep) ->
+    case partition(String, Sep, []) of
+        undefined ->
+            {String, "", ""};
+        Result ->
+            Result
+    end.
+
+partition("", _Sep, _Acc) ->
+    undefined;
+partition(S, Sep, Acc) ->
+    case partition2(S, Sep) of
+        undefined ->
+            [C | Rest] = S,
+            partition(Rest, Sep, [C | Acc]);
+        Rest ->
+            {lists:reverse(Acc), Sep, Rest}
+    end.
+
+partition2(Rest, "") ->
+    Rest;
+partition2([C | R1], [C | R2]) ->
+    partition2(R1, R2);
+partition2(_S, _Sep) ->
+    undefined.
+
+relpath(Path, Root) ->
+    {_, _, RelPath} = partition(Path, Root),
+    case string:left(RelPath, 1) of
+        " " ->
+            "";
+        "/" ->
+            "/" ++ RelPath1 = RelPath,
+            RelPath1;
+        "\\" ->
+            "\\\\" ++ RelPath1 = RelPath,
+            RelPath1
+    end.
+
+%% function from pragmatic programmer book.
+md5_file(File) ->
+    case file:open(File, [binary,raw,read]) of
+    {ok, P} -> loop(P, crypto:md5_init());
+    Error   -> Error
     end.
 
 new_id() ->
@@ -287,6 +353,16 @@ to_lower(<<195, C, Rest/binary>>, Acc) when 152 =< C, C =< 158 -> %% U and Y wit
 to_lower(<<C, Rest/binary>>, Acc) ->
   to_lower(Rest, <<Acc/binary, C>>).
 
+%% @doc set a value for a key in jsonobj. If key exists it will be updated.
+set_value(Key, Value, JsonObj) when is_list(Key)->
+    set_value(list_to_binary(Key), Value, JsonObj);
+set_value(Key, Value, JsonObj) when is_binary(Key) ->
+    {Props} = JsonObj,
+    case proplists:is_defined(Key, Props) of
+        true -> set_value1(Props, Key, Value, []);
+        false-> {lists:reverse([{Key, Value}|lists:reverse(Props)])}
+    end.
+
 
 %%% private
 
@@ -317,4 +393,24 @@ sh_loop(Port, Fun, Acc) ->
             {ok, lists:flatten(lists:reverse(Acc))};
         {Port, {exit_status, Rc}} ->
             {error, {Rc, lists:flatten(lists:reverse(Acc))}}
+    end.
+
+set_value1([], _Key, _Value, Acc) ->
+    {lists:reverse(Acc)};
+set_value1([{K, V}|T], Key, Value, Acc) ->
+    Acc1 = if
+        K =:= Key ->
+            [{Key, Value}|Acc];
+        true ->
+            [{K, V}|Acc]
+        end,
+    set_value1(T, Key, Value, Acc1).
+
+loop (P, C) ->
+    case file:read(P, ?BLOCKSIZE) of
+    {ok, Bin} ->
+        loop(P, crypto:md5_update(C, Bin));
+    eof ->
+        file:close(P),
+        {ok, crypto:md5_final(C)}
     end.
